@@ -1,12 +1,17 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { useNotificationChecker } from '@/hooks/useNotificationChecker';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  // Check and create notifications on mount
+  useNotificationChecker();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
@@ -16,6 +21,11 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Mobile Navigation */}
       <MobileNav />
+
+      {/* Desktop Header with Notifications */}
+      <div className="fixed right-6 top-4 z-50 hidden lg:block">
+        <NotificationBell />
+      </div>
 
       {/* Main Content */}
       <main className="lg:pl-64">

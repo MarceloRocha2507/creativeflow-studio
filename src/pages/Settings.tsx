@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Palette, DollarSign, Loader2, Plus, Trash2 } from 'lucide-react';
+import { User, Palette, DollarSign, Loader2, Plus, Trash2, Bell } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -28,11 +30,24 @@ interface ServiceType {
   color: string;
 }
 
+interface NotificationSettings {
+  id?: string;
+  deadline_days: number[];
+  payment_reminder: boolean;
+  daily_summary: boolean;
+}
+
 export default function Settings() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
+    deadline_days: [1, 3, 7],
+    payment_reminder: true,
+    daily_summary: true,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -54,9 +69,10 @@ export default function Settings() {
   const fetchData = async () => {
     if (!user) return;
 
-    const [profileRes, servicesRes] = await Promise.all([
+    const [profileRes, servicesRes, notifRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', user.id).single(),
       supabase.from('service_types').select('*').order('created_at'),
+      supabase.from('notification_settings').select('*').eq('user_id', user.id).single(),
     ]);
 
     if (profileRes.data) {
@@ -70,6 +86,15 @@ export default function Settings() {
 
     if (!servicesRes.error) {
       setServiceTypes(servicesRes.data || []);
+    }
+
+    if (notifRes.data) {
+      setNotificationSettings({
+        id: notifRes.data.id,
+        deadline_days: notifRes.data.deadline_days || [1, 3, 7],
+        payment_reminder: notifRes.data.payment_reminder ?? true,
+        daily_summary: notifRes.data.daily_summary ?? true,
+      });
     }
 
     setIsLoading(false);
@@ -126,6 +151,48 @@ export default function Settings() {
     }
   };
 
+  const toggleDeadlineDay = (day: number) => {
+    setNotificationSettings((prev) => ({
+      ...prev,
+      deadline_days: prev.deadline_days.includes(day)
+        ? prev.deadline_days.filter((d) => d !== day)
+        : [...prev.deadline_days, day].sort((a, b) => a - b),
+    }));
+  };
+
+  const saveNotificationSettings = async () => {
+    if (!user) return;
+    setIsSavingNotifications(true);
+
+    const payload = {
+      user_id: user.id,
+      deadline_days: notificationSettings.deadline_days,
+      payment_reminder: notificationSettings.payment_reminder,
+      daily_summary: notificationSettings.daily_summary,
+    };
+
+    let error;
+    if (notificationSettings.id) {
+      const res = await supabase
+        .from('notification_settings')
+        .update(payload)
+        .eq('id', notificationSettings.id);
+      error = res.error;
+    } else {
+      const res = await supabase.from('notification_settings').insert([payload]);
+      error = res.error;
+    }
+
+    setIsSavingNotifications(false);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
+    } else {
+      toast({ title: 'Configurações de notificação atualizadas!' });
+      fetchData();
+    }
+  };
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -157,6 +224,10 @@ export default function Settings() {
             <TabsTrigger value="billing" className="gap-2">
               <DollarSign className="h-4 w-4" />
               Cobrança
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2">
+              <Bell className="h-4 w-4" />
+              Notificações
             </TabsTrigger>
           </TabsList>
 
@@ -276,6 +347,88 @@ export default function Settings() {
                 </div>
                 <Button onClick={saveProfile} disabled={isSaving} className="gradient-primary">
                   {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Salvar'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <Card className="border-border/50 bg-card/50 backdrop-blur">
+              <CardHeader>
+                <CardTitle>Configurações de Notificações</CardTitle>
+                <CardDescription>Personalize quando deseja receber alertas</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-base">Alertas de Prazo</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receba notificações quando prazos estiverem próximos
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    {[1, 3, 7, 14, 30].map((day) => (
+                      <div key={day} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`day-${day}`}
+                          checked={notificationSettings.deadline_days.includes(day)}
+                          onCheckedChange={() => toggleDeadlineDay(day)}
+                        />
+                        <Label htmlFor={`day-${day}`} className="cursor-pointer">
+                          {day === 1 ? '1 dia antes' : `${day} dias antes`}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-border/50 p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Lembretes de Pagamento</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receba alertas sobre pagamentos pendentes há mais de 30 dias
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationSettings.payment_reminder}
+                    onCheckedChange={(checked) =>
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        payment_reminder: checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-border/50 p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Resumo Diário</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receba um resumo diário de pendências
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationSettings.daily_summary}
+                    onCheckedChange={(checked) =>
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        daily_summary: checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <Button
+                  onClick={saveNotificationSettings}
+                  disabled={isSavingNotifications}
+                  className="gradient-primary"
+                >
+                  {isSavingNotifications ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Configurações'
+                  )}
                 </Button>
               </CardContent>
             </Card>
