@@ -14,6 +14,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
+import { Bell } from 'lucide-react';
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clientes', href: '/clients', icon: Users },
@@ -21,6 +23,7 @@ const navigation = [
   { name: 'Horas', href: '/time-tracking', icon: Clock },
   { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
   { name: 'Financeiro', href: '/finances', icon: DollarSign },
+  { name: 'Notificações', href: '/notifications', icon: Bell },
   { name: 'Configurações', href: '/settings', icon: Settings },
 ];
 
