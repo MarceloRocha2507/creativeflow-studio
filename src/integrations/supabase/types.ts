@@ -346,6 +346,33 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_status: {
+        Row: {
+          accepting_orders: boolean
+          active_orders: number
+          created_at: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accepting_orders?: boolean
+          active_orders?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accepting_orders?: boolean
+          active_orders?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       task_checklist_items: {
         Row: {
           created_at: string
