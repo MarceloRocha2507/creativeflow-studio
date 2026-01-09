@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -168,14 +167,14 @@ export default function Tasks() {
 
   const statusIcons: Record<string, React.ReactNode> = {
     todo: <Circle className="h-5 w-5 text-muted-foreground" />,
-    in_progress: <Clock className="h-5 w-5 text-accent" />,
-    completed: <CheckCircle2 className="h-5 w-5 text-success" />,
+    in_progress: <Clock className="h-5 w-5 text-cyan-400" />,
+    completed: <CheckCircle2 className="h-5 w-5 text-emerald-400" />,
   };
 
   const priorityColors: Record<string, string> = {
-    low: 'bg-muted text-muted-foreground',
-    medium: 'bg-accent/10 text-accent',
-    high: 'bg-warning/10 text-warning',
+    low: 'bg-muted/50 text-muted-foreground border-border/50',
+    medium: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+    high: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
   };
 
   const priorityLabels: Record<string, string> = {
@@ -184,46 +183,41 @@ export default function Tasks() {
     high: 'Alta',
   };
 
-  // Group tasks by status
-  const todoTasks = filteredTasks.filter(t => t.status === 'todo');
-  const inProgressTasks = filteredTasks.filter(t => t.status === 'in_progress');
-  const completedTasks = filteredTasks.filter(t => t.status === 'completed');
-
   return (
     <AppLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold lg:text-3xl">Tarefas</h1>
+            <h1 className="text-2xl font-bold lg:text-3xl text-gradient">Tarefas</h1>
             <p className="text-muted-foreground">Organize suas pendências e entregas</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary gap-2">
+              <Button className="gradient-primary gap-2 glow-primary">
                 <Plus className="h-4 w-4" />
                 Nova Tarefa
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="glass-card border-white/10">
               <DialogHeader>
-                <DialogTitle>{editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
+                <DialogTitle className="text-gradient">{editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Título *</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="glass border-white/10" />
                 </div>
                 <div className="space-y-2">
                   <Label>Descrição</Label>
-                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="glass border-white/10" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Projeto</Label>
                     <Select value={projectId} onValueChange={setProjectId}>
-                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -231,8 +225,8 @@ export default function Tasks() {
                   <div className="space-y-2">
                     <Label>Prioridade</Label>
                     <Select value={priority} onValueChange={setPriority}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         <SelectItem value="low">Baixa</SelectItem>
                         <SelectItem value="medium">Média</SelectItem>
                         <SelectItem value="high">Alta</SelectItem>
@@ -242,8 +236,8 @@ export default function Tasks() {
                   <div className="space-y-2">
                     <Label>Status</Label>
                     <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         <SelectItem value="todo">A fazer</SelectItem>
                         <SelectItem value="in_progress">Em andamento</SelectItem>
                         <SelectItem value="completed">Concluída</SelectItem>
@@ -252,12 +246,12 @@ export default function Tasks() {
                   </div>
                   <div className="space-y-2">
                     <Label>Prazo</Label>
-                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="glass border-white/10" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>Cancelar</Button>
-                  <Button type="submit" className="gradient-primary">{editingTask ? 'Salvar' : 'Criar'}</Button>
+                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">Cancelar</Button>
+                  <Button type="submit" className="gradient-primary glow-primary">{editingTask ? 'Salvar' : 'Criar'}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -268,13 +262,13 @@ export default function Tasks() {
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar tarefas..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+            <Input placeholder="Buscar tarefas..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 glass border-white/10" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-40 glass border-white/10">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="glass-card border-white/10">
               <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="todo">A fazer</SelectItem>
               <SelectItem value="in_progress">Em andamento</SelectItem>
@@ -289,9 +283,9 @@ export default function Tasks() {
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : filteredTasks.length === 0 ? (
-          <Card className="border-dashed">
+          <Card className="glass-card border-white/10 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 rounded-full bg-muted p-4">
+              <div className="mb-4 rounded-full glass p-4">
                 <CheckSquare className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium">Nenhuma tarefa encontrada</h3>
@@ -302,10 +296,14 @@ export default function Tasks() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {filteredTasks.map((task) => (
-              <Card key={task.id} className={`border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/30 ${task.status === 'completed' ? 'opacity-60' : ''}`}>
+            {filteredTasks.map((task, index) => (
+              <Card 
+                key={task.id} 
+                className={`glass-card glass-border transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-primary/5 ${task.status === 'completed' ? 'opacity-60' : ''}`}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
                 <CardContent className="flex items-start gap-4 p-4">
-                  <button onClick={() => toggleStatus(task)} className="mt-0.5 shrink-0">
+                  <button onClick={() => toggleStatus(task)} className="mt-0.5 shrink-0 transition-transform hover:scale-110">
                     {statusIcons[task.status]}
                   </button>
                   <div className="flex-1 min-w-0">
@@ -324,7 +322,7 @@ export default function Tasks() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="glass-card border-white/10">
                           <DropdownMenuItem onClick={() => openEditDialog(task)}>
                             <Pencil className="mr-2 h-4 w-4" />Editar
                           </DropdownMenuItem>
@@ -340,7 +338,7 @@ export default function Tasks() {
                       </Badge>
                       {task.due_date && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
+                          <Calendar className="h-3 w-3 text-primary/70" />
                           {format(new Date(task.due_date), 'dd MMM', { locale: ptBR })}
                         </div>
                       )}

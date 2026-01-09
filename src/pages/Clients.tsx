@@ -158,9 +158,9 @@ export default function Clients() {
   });
 
   const statusColors: Record<string, string> = {
-    active: 'bg-success/10 text-success border-success/20',
-    inactive: 'bg-muted text-muted-foreground border-border',
-    potential: 'bg-warning/10 text-warning border-warning/20',
+    active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    inactive: 'bg-muted/50 text-muted-foreground border-border/50',
+    potential: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
   };
 
   const statusLabels: Record<string, string> = {
@@ -175,35 +175,35 @@ export default function Clients() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold lg:text-3xl">Clientes</h1>
+            <h1 className="text-2xl font-bold lg:text-3xl text-gradient">Clientes</h1>
             <p className="text-muted-foreground">Gerencie seus clientes e contatos</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary gap-2">
+              <Button className="gradient-primary gap-2 glow-primary">
                 <Plus className="h-4 w-4" />
                 Novo Cliente
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogContent className="glass-card border-white/10 max-h-[90vh] overflow-y-auto sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
+                <DialogTitle className="text-gradient">{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="name">Nome *</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="company">Empresa</Label>
-                    <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} />
+                    <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
                     <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         <SelectItem value="active">Ativo</SelectItem>
                         <SelectItem value="inactive">Inativo</SelectItem>
                         <SelectItem value="potential">Potencial</SelectItem>
@@ -212,30 +212,30 @@ export default function Clients() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefone</Label>
-                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="document">CPF/CNPJ</Label>
-                    <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} />
+                    <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="address">Endereço</Label>
-                    <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+                    <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="notes">Observações</Label>
-                    <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+                    <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="glass border-white/10" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
+                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
                     Cancelar
                   </Button>
-                  <Button type="submit" className="gradient-primary">
+                  <Button type="submit" className="gradient-primary glow-primary">
                     {editingClient ? 'Salvar' : 'Criar Cliente'}
                   </Button>
                 </div>
@@ -252,14 +252,14 @@ export default function Clients() {
               placeholder="Buscar clientes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 glass border-white/10"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-40 glass border-white/10">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="glass-card border-white/10">
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="inactive">Inativos</SelectItem>
@@ -274,9 +274,9 @@ export default function Clients() {
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : filteredClients.length === 0 ? (
-          <Card className="border-dashed">
+          <Card className="glass-card border-white/10 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 rounded-full bg-muted p-4">
+              <div className="mb-4 rounded-full glass p-4">
                 <Users className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium">Nenhum cliente encontrado</h3>
@@ -289,25 +289,29 @@ export default function Clients() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredClients.map((client) => (
-              <Card key={client.id} className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/30">
+            {filteredClients.map((client, index) => (
+              <Card 
+                key={client.id} 
+                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
                 <CardHeader className="flex flex-row items-start justify-between pb-2">
                   <div className="space-y-1">
                     <CardTitle className="text-lg">{client.name}</CardTitle>
                     {client.company && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Building2 className="h-3 w-3" />
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Building2 className="h-3.5 w-3.5 text-primary/70" />
                         {client.company}
                       </div>
                     )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="glass-card border-white/10">
                       <DropdownMenuItem onClick={() => openEditDialog(client)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar
@@ -325,13 +329,13 @@ export default function Clients() {
                 <CardContent className="space-y-3">
                   {client.email && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      {client.email}
+                      <Mail className="h-4 w-4 text-primary/70" />
+                      <span className="truncate">{client.email}</span>
                     </div>
                   )}
                   {client.phone && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
+                      <Phone className="h-4 w-4 text-primary/70" />
                       {client.phone}
                     </div>
                   )}

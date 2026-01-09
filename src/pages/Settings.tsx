@@ -207,60 +207,60 @@ export default function Settings() {
     <AppLayout>
       <div className="space-y-6 animate-fade-in">
         <div>
-          <h1 className="text-2xl font-bold lg:text-3xl">Configurações</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl text-gradient">Configurações</h1>
           <p className="text-muted-foreground">Personalize seu perfil e preferências</p>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="profile" className="gap-2">
+          <TabsList className="glass border-white/10">
+            <TabsTrigger value="profile" className="gap-2 data-[state=active]:bg-primary/20">
               <User className="h-4 w-4" />
               Perfil
             </TabsTrigger>
-            <TabsTrigger value="services" className="gap-2">
+            <TabsTrigger value="services" className="gap-2 data-[state=active]:bg-primary/20">
               <Palette className="h-4 w-4" />
               Serviços
             </TabsTrigger>
-            <TabsTrigger value="billing" className="gap-2">
+            <TabsTrigger value="billing" className="gap-2 data-[state=active]:bg-primary/20">
               <DollarSign className="h-4 w-4" />
               Cobrança
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-2">
+            <TabsTrigger value="notifications" className="gap-2 data-[state=active]:bg-primary/20">
               <Bell className="h-4 w-4" />
               Notificações
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
-            <Card className="border-border/50 bg-card/50 backdrop-blur">
+            <Card className="glass-card glass-border">
               <CardHeader>
-                <CardTitle>Informações do Perfil</CardTitle>
+                <CardTitle className="text-gradient">Informações do Perfil</CardTitle>
                 <CardDescription>Seus dados profissionais que aparecerão em relatórios</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Nome Completo</Label>
-                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label>Nome do Negócio / Estúdio</Label>
-                    <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Ex: Studio Design" />
+                    <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Ex: Studio Design" className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label>Especialidade</Label>
-                    <Input value={specialty} onChange={(e) => setSpecialty(e.target.value)} placeholder="Ex: UI/UX Designer" />
+                    <Input value={specialty} onChange={(e) => setSpecialty(e.target.value)} placeholder="Ex: UI/UX Designer" className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label>Telefone</Label>
-                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
+                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input value={user?.email || ''} disabled className="bg-muted" />
+                    <Input value={user?.email || ''} disabled className="glass border-white/10 bg-muted/30" />
                   </div>
                 </div>
-                <Button onClick={saveProfile} disabled={isSaving} className="gradient-primary">
+                <Button onClick={saveProfile} disabled={isSaving} className="gradient-primary glow-primary">
                   {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Salvar Alterações'}
                 </Button>
               </CardContent>
@@ -268,9 +268,9 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="services">
-            <Card className="border-border/50 bg-card/50 backdrop-blur">
+            <Card className="glass-card glass-border">
               <CardHeader>
-                <CardTitle>Tipos de Serviço</CardTitle>
+                <CardTitle className="text-gradient">Tipos de Serviço</CardTitle>
                 <CardDescription>Categorize seus projetos por tipo de trabalho</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -279,16 +279,16 @@ export default function Settings() {
                     value={newServiceName}
                     onChange={(e) => setNewServiceName(e.target.value)}
                     placeholder="Nome do serviço (ex: Logo Design)"
-                    className="flex-1"
+                    className="flex-1 glass border-white/10"
                   />
                   <Input
                     type="number"
                     value={newServiceRate}
                     onChange={(e) => setNewServiceRate(e.target.value)}
                     placeholder="Valor/hora (R$)"
-                    className="w-32"
+                    className="w-32 glass border-white/10"
                   />
-                  <Button onClick={addServiceType} className="gradient-primary gap-2">
+                  <Button onClick={addServiceType} className="gradient-primary gap-2 glow-primary">
                     <Plus className="h-4 w-4" />
                     Adicionar
                   </Button>
@@ -300,10 +300,14 @@ export default function Settings() {
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {serviceTypes.map((service) => (
-                      <div key={service.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-3">
+                    {serviceTypes.map((service, index) => (
+                      <div 
+                        key={service.id} 
+                        className="flex items-center justify-between rounded-xl glass glass-border p-3 transition-all duration-300 hover:scale-[1.01]"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="h-4 w-4 rounded-full" style={{ backgroundColor: service.color }} />
+                          <div className="h-4 w-4 rounded-full ring-2 ring-white/20" style={{ backgroundColor: service.color }} />
                           <span className="font-medium">{service.name}</span>
                           {service.default_rate && (
                             <span className="text-sm text-muted-foreground">R$ {service.default_rate}/h</span>
@@ -326,9 +330,9 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="billing">
-            <Card className="border-border/50 bg-card/50 backdrop-blur">
+            <Card className="glass-card glass-border">
               <CardHeader>
-                <CardTitle>Configurações de Cobrança</CardTitle>
+                <CardTitle className="text-gradient">Configurações de Cobrança</CardTitle>
                 <CardDescription>Defina valores padrão para seus projetos</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -340,12 +344,13 @@ export default function Settings() {
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(e.target.value)}
                     placeholder="0.00"
+                    className="glass border-white/10"
                   />
                   <p className="text-xs text-muted-foreground">
                     Este valor será usado como padrão em novos projetos por hora
                   </p>
                 </div>
-                <Button onClick={saveProfile} disabled={isSaving} className="gradient-primary">
+                <Button onClick={saveProfile} disabled={isSaving} className="gradient-primary glow-primary">
                   {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Salvar'}
                 </Button>
               </CardContent>
@@ -353,9 +358,9 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <Card className="border-border/50 bg-card/50 backdrop-blur">
+            <Card className="glass-card glass-border">
               <CardHeader>
-                <CardTitle>Configurações de Notificações</CardTitle>
+                <CardTitle className="text-gradient">Configurações de Notificações</CardTitle>
                 <CardDescription>Personalize quando deseja receber alertas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -371,6 +376,7 @@ export default function Settings() {
                           id={`day-${day}`}
                           checked={notificationSettings.deadline_days.includes(day)}
                           onCheckedChange={() => toggleDeadlineDay(day)}
+                          className="border-white/20"
                         />
                         <Label htmlFor={`day-${day}`} className="cursor-pointer">
                           {day === 1 ? '1 dia antes' : `${day} dias antes`}
@@ -380,7 +386,7 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between rounded-lg border border-border/50 p-4">
+                <div className="flex items-center justify-between rounded-xl glass glass-border p-4">
                   <div className="space-y-0.5">
                     <Label className="text-base">Lembretes de Pagamento</Label>
                     <p className="text-sm text-muted-foreground">
@@ -398,7 +404,7 @@ export default function Settings() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between rounded-lg border border-border/50 p-4">
+                <div className="flex items-center justify-between rounded-xl glass glass-border p-4">
                   <div className="space-y-0.5">
                     <Label className="text-base">Resumo Diário</Label>
                     <p className="text-sm text-muted-foreground">
@@ -419,7 +425,7 @@ export default function Settings() {
                 <Button
                   onClick={saveNotificationSettings}
                   disabled={isSavingNotifications}
-                  className="gradient-primary"
+                  className="gradient-primary glow-primary"
                 >
                   {isSavingNotifications ? (
                     <>

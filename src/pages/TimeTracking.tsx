@@ -214,51 +214,51 @@ export default function TimeTracking() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold lg:text-3xl">Controle de Horas</h1>
+            <h1 className="text-2xl font-bold lg:text-3xl text-gradient">Controle de Horas</h1>
             <p className="text-muted-foreground">Registre e acompanhe seu tempo de trabalho</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 glass border-white/10">
                 <Plus className="h-4 w-4" />
                 Registro Manual
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="glass-card border-white/10">
               <DialogHeader>
-                <DialogTitle>Adicionar Registro Manual</DialogTitle>
+                <DialogTitle className="text-gradient">Adicionar Registro Manual</DialogTitle>
               </DialogHeader>
               <form onSubmit={addManualEntry} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Projeto *</Label>
                   <Select value={selectedProject} onValueChange={setSelectedProject}>
-                    <SelectTrigger><SelectValue placeholder="Selecione um projeto" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione um projeto" /></SelectTrigger>
+                    <SelectContent className="glass-card border-white/10">
                       {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Descrição</Label>
-                  <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que você fez?" />
+                  <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que você fez?" className="glass border-white/10" />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Data</Label>
-                    <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} />
+                    <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label>Início</Label>
-                    <Input type="time" value={manualStart} onChange={(e) => setManualStart(e.target.value)} />
+                    <Input type="time" value={manualStart} onChange={(e) => setManualStart(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label>Fim</Label>
-                    <Input type="time" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} />
+                    <Input type="time" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} className="glass border-white/10" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                  <Button type="submit" className="gradient-primary">Adicionar</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="glass border-white/10">Cancelar</Button>
+                  <Button type="submit" className="gradient-primary glow-primary">Adicionar</Button>
                 </div>
               </form>
             </DialogContent>
@@ -266,11 +266,11 @@ export default function TimeTracking() {
         </div>
 
         {/* Timer Card */}
-        <Card className="border-border/50 bg-card/50 backdrop-blur glow-primary">
+        <Card className="glass-card glass-border glow-primary overflow-hidden">
           <CardContent className="p-6">
             <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
               <div className="flex flex-col items-center gap-4 lg:flex-row">
-                <div className="text-5xl font-bold font-mono text-gradient">
+                <div className="text-5xl font-bold font-mono text-gradient animate-pulse-glow">
                   {formatDuration(elapsedTime)}
                 </div>
                 {activeEntry && (
@@ -287,21 +287,21 @@ export default function TimeTracking() {
                     <div className="min-w-[200px]">
                       <Label className="text-xs text-muted-foreground">Projeto</Label>
                       <Select value={selectedProject} onValueChange={setSelectedProject}>
-                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>
+                        <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent className="glass-card border-white/10">
                           {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="min-w-[200px]">
                       <Label className="text-xs text-muted-foreground">Descrição</Label>
-                      <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que você vai fazer?" />
+                      <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que você vai fazer?" className="glass border-white/10" />
                     </div>
                   </>
                 )}
                 <Button
                   size="lg"
-                  className={activeEntry ? 'bg-destructive hover:bg-destructive/90' : 'gradient-primary'}
+                  className={activeEntry ? 'bg-red-500 hover:bg-red-600 glow-destructive' : 'gradient-primary glow-primary'}
                   onClick={activeEntry ? stopTimer : startTimer}
                 >
                   {activeEntry ? (
@@ -317,36 +317,40 @@ export default function TimeTracking() {
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="border-border/50 bg-card/50 backdrop-blur">
+          <Card className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02]">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Calendar className="h-4 w-4" />
+                <div className="rounded-lg bg-cyan-500/10 p-2">
+                  <Calendar className="h-4 w-4 text-cyan-400" />
+                </div>
                 Esta Semana
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{getTotalHours(weeklyEntries).toFixed(1)}h</div>
+              <div className="text-3xl font-bold text-gradient">{getTotalHours(weeklyEntries).toFixed(1)}h</div>
               <p className="text-xs text-muted-foreground">{weeklyEntries.length} registros</p>
             </CardContent>
           </Card>
-          <Card className="border-border/50 bg-card/50 backdrop-blur">
+          <Card className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02]">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Clock className="h-4 w-4" />
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                </div>
                 Este Mês
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{getTotalHours(monthlyEntries).toFixed(1)}h</div>
+              <div className="text-3xl font-bold text-gradient">{getTotalHours(monthlyEntries).toFixed(1)}h</div>
               <p className="text-xs text-muted-foreground">{monthlyEntries.length} registros</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Recent Entries */}
-        <Card className="border-border/50 bg-card/50 backdrop-blur">
+        <Card className="glass-card glass-border">
           <CardHeader>
-            <CardTitle>Registros Recentes</CardTitle>
+            <CardTitle className="text-gradient">Registros Recentes</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -359,8 +363,12 @@ export default function TimeTracking() {
               </div>
             ) : (
               <div className="space-y-3">
-                {entries.filter(e => !e.is_running).slice(0, 10).map((entry) => (
-                  <div key={entry.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-3">
+                {entries.filter(e => !e.is_running).slice(0, 10).map((entry, index) => (
+                  <div 
+                    key={entry.id} 
+                    className="flex items-center justify-between rounded-xl glass glass-border p-3 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-primary/5"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{entry.projects?.name}</span>
@@ -373,7 +381,7 @@ export default function TimeTracking() {
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-accent">
+                      <span className="font-mono text-cyan-400">
                         {entry.duration_minutes ? `${Math.floor(entry.duration_minutes / 60)}h ${entry.duration_minutes % 60}m` : '-'}
                       </span>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteEntry(entry.id)}>
