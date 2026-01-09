@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ interface UserDetails {
 }
 
 export default function AdminUsers() {
+  const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
   const [addUserOpen, setAddUserOpen] = useState(false);
@@ -236,7 +238,7 @@ export default function AdminUsers() {
                             >
                               <RefreshCw className="h-4 w-4" />
                             </Button>
-                            {!isCurrentUserAdmin && (
+                            {user.user_id !== currentUser?.id && (
                               <Button
                                 variant="ghost"
                                 size="sm"
