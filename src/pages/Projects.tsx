@@ -173,11 +173,11 @@ export default function Projects() {
   });
 
   const statusColors: Record<string, string> = {
-    in_progress: 'bg-accent/10 text-accent border-accent/20',
-    pending_approval: 'bg-warning/10 text-warning border-warning/20',
-    completed: 'bg-success/10 text-success border-success/20',
-    paused: 'bg-muted text-muted-foreground border-border',
-    cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
+    in_progress: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+    pending_approval: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    paused: 'bg-muted/50 text-muted-foreground border-border/50',
+    cancelled: 'bg-red-500/10 text-red-400 border-red-500/30',
   };
 
   const statusLabels: Record<string, string> = {
@@ -190,9 +190,9 @@ export default function Projects() {
 
   const priorityColors: Record<string, string> = {
     low: 'text-muted-foreground',
-    medium: 'text-accent',
-    high: 'text-warning',
-    urgent: 'text-destructive',
+    medium: 'text-cyan-400',
+    high: 'text-amber-400',
+    urgent: 'text-red-400',
   };
 
   return (
@@ -201,35 +201,35 @@ export default function Projects() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold lg:text-3xl">Projetos</h1>
+            <h1 className="text-2xl font-bold lg:text-3xl text-gradient">Projetos</h1>
             <p className="text-muted-foreground">Gerencie seus projetos e serviços</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary gap-2">
+              <Button className="gradient-primary gap-2 glow-primary">
                 <Plus className="h-4 w-4" />
                 Novo Projeto
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogContent className="glass-card border-white/10 max-h-[90vh] overflow-y-auto sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{editingProject ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
+                <DialogTitle className="text-gradient">{editingProject ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="name">Nome do Projeto *</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="glass border-white/10" />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="description">Descrição</Label>
-                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="client">Cliente</Label>
                     <Select value={clientId} onValueChange={setClientId}>
-                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         {clients.map(client => (
                           <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
                         ))}
@@ -239,8 +239,8 @@ export default function Projects() {
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
                     <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         <SelectItem value="in_progress">Em andamento</SelectItem>
                         <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
                         <SelectItem value="completed">Concluído</SelectItem>
@@ -252,8 +252,8 @@ export default function Projects() {
                   <div className="space-y-2">
                     <Label htmlFor="priority">Prioridade</Label>
                     <Select value={priority} onValueChange={setPriority}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         <SelectItem value="low">Baixa</SelectItem>
                         <SelectItem value="medium">Média</SelectItem>
                         <SelectItem value="high">Alta</SelectItem>
@@ -264,8 +264,8 @@ export default function Projects() {
                   <div className="space-y-2">
                     <Label htmlFor="billingType">Tipo de Cobrança</Label>
                     <Select value={billingType} onValueChange={setBillingType}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
                         <SelectItem value="fixed">Valor Fixo</SelectItem>
                         <SelectItem value="hourly">Por Hora</SelectItem>
                       </SelectContent>
@@ -274,28 +274,28 @@ export default function Projects() {
                   {billingType === 'fixed' ? (
                     <div className="space-y-2">
                       <Label htmlFor="budget">Valor do Projeto (R$)</Label>
-                      <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} />
+                      <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
-                      <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} />
+                      <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
                     </div>
                   )}
                   <div className="space-y-2">
                     <Label htmlFor="startDate">Data de Início</Label>
-                    <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                    <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="glass border-white/10" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="deadline">Prazo</Label>
-                    <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+                    <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
+                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
                     Cancelar
                   </Button>
-                  <Button type="submit" className="gradient-primary">
+                  <Button type="submit" className="gradient-primary glow-primary">
                     {editingProject ? 'Salvar' : 'Criar Projeto'}
                   </Button>
                 </div>
@@ -308,13 +308,13 @@ export default function Projects() {
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar projetos..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+            <Input placeholder="Buscar projetos..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 glass border-white/10" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-48 glass border-white/10">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="glass-card border-white/10">
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="in_progress">Em andamento</SelectItem>
               <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
@@ -330,9 +330,9 @@ export default function Projects() {
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : filteredProjects.length === 0 ? (
-          <Card className="border-dashed">
+          <Card className="glass-card border-white/10 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 rounded-full bg-muted p-4">
+              <div className="mb-4 rounded-full glass p-4">
                 <FolderKanban className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium">Nenhum projeto encontrado</h3>
@@ -343,25 +343,29 @@ export default function Projects() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project) => (
-              <Card key={project.id} className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/30">
+            {filteredProjects.map((project, index) => (
+              <Card 
+                key={project.id} 
+                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
                 <CardHeader className="flex flex-row items-start justify-between pb-2">
                   <div className="space-y-1 flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{project.name}</CardTitle>
                     {project.clients?.name && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <User className="h-3 w-3 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <User className="h-3.5 w-3.5 text-primary/70 shrink-0" />
                         <span className="truncate">{project.clients.name}</span>
                       </div>
                     )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="glass-card border-white/10">
                       <DropdownMenuItem onClick={() => openEditDialog(project)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar
@@ -381,13 +385,13 @@ export default function Projects() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     {project.deadline && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Calendar className="h-4 w-4 text-primary/70" />
                         {format(new Date(project.deadline), 'dd MMM', { locale: ptBR })}
                       </div>
                     )}
                     {(project.budget || project.hourly_rate) && (
-                      <div className="flex items-center gap-1 text-success">
+                      <div className="flex items-center gap-1.5 text-emerald-400">
                         <DollarSign className="h-4 w-4" />
                         R$ {project.budget || project.hourly_rate}/h
                       </div>
