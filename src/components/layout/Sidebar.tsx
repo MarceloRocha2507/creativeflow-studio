@@ -12,8 +12,12 @@ import {
   Sparkles,
   Bell,
   UserCircle,
+  Shield,
+  Key,
+  ScrollText,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 
 const navigation = [
@@ -28,9 +32,54 @@ const navigation = [
   { name: 'Configurações', href: '/settings', icon: Settings },
 ];
 
+const adminNavigation = [
+  { name: 'Painel Admin', href: '/admin', icon: Shield },
+  { name: 'Usuários', href: '/admin/users', icon: Users },
+  { name: 'Permissões', href: '/admin/roles', icon: Key },
+  { name: 'Logs', href: '/admin/logs', icon: ScrollText },
+];
+
 export function Sidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { isAdmin } = useAdmin();
+
+  const renderNavItem = (item: typeof navigation[0], index: number) => {
+    const isActive = location.pathname === item.href;
+    return (
+      <Link
+        key={item.name}
+        to={item.href}
+        className={cn(
+          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
+          isActive
+            ? 'bg-primary/10 text-primary active-indicator'
+            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+        )}
+        style={{ 
+          animationDelay: `${index * 50}ms`,
+        }}
+      >
+        <div className={cn(
+          'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
+          isActive 
+            ? 'bg-primary/20 icon-glow' 
+            : 'bg-secondary/50 group-hover:bg-secondary'
+        )}>
+          <item.icon className={cn(
+            'h-4 w-4 transition-all duration-300',
+            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+          )} />
+        </div>
+        <span className="relative">
+          {item.name}
+          {isActive && (
+            <span className="absolute -bottom-1 left-0 h-[2px] w-full rounded-full bg-gradient-to-r from-primary to-accent opacity-50" />
+          )}
+        </span>
+      </Link>
+    );
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass border-r border-border/50">
@@ -47,48 +96,25 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-6">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
           <div className="mb-4 px-3">
             <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
               Menu Principal
             </span>
           </div>
-          {navigation.map((item, index) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
-                  isActive
-                    ? 'bg-primary/10 text-primary active-indicator'
-                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-                )}
-                style={{ 
-                  animationDelay: `${index * 50}ms`,
-                }}
-              >
-                <div className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
-                  isActive 
-                    ? 'bg-primary/20 icon-glow' 
-                    : 'bg-secondary/50 group-hover:bg-secondary'
-                )}>
-                  <item.icon className={cn(
-                    'h-4 w-4 transition-all duration-300',
-                    isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                  )} />
-                </div>
-                <span className="relative">
-                  {item.name}
-                  {isActive && (
-                    <span className="absolute -bottom-1 left-0 h-[2px] w-full rounded-full bg-gradient-to-r from-primary to-accent opacity-50" />
-                  )}
+          {navigation.map((item, index) => renderNavItem(item, index))}
+
+          {/* Admin Section */}
+          {isAdmin && (
+            <>
+              <div className="mb-4 mt-6 px-3">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                  Administração
                 </span>
-              </Link>
-            );
-          })}
+              </div>
+              {adminNavigation.map((item, index) => renderNavItem(item, index))}
+            </>
+          )}
         </nav>
 
         {/* Footer */}
