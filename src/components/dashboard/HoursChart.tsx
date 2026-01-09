@@ -11,11 +11,20 @@ import {
 import { Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { startOfWeek, endOfWeek, format, addDays, subWeeks, parseISO, isSameDay } from 'date-fns';
+import { startOfWeek, endOfWeek, format, addDays, subWeeks, parseISO, isSameDay, startOfMonth, subMonths, startOfQuarter, subQuarters, eachDayOfInterval, eachWeekOfInterval, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-interface DailyData {
-  day: string;
+type Period = 'week' | 'month' | 'quarter';
+
+interface DataPoint {
+  label: string;
   hours: number;
   date: Date;
 }
@@ -36,9 +45,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function HoursChart() {
   const { user } = useAuth();
-  const [data, setData] = useState<DailyData[]>([]);
+  const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [previousWeekTotal, setPreviousWeekTotal] = useState(0);
+  const [period, setPeriod] = useState<Period>('week');
+  const [previousPeriodTotal, setPreviousPeriodTotal] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -47,26 +57,43 @@ export function HoursChart() {
       setLoading(true);
       
       const now = new Date();
-      const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-      const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
-      const previousWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-      const previousWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+      let startDate: Date;
+      let endDate: Date;
+      let previousStartDate: Date;
+      let previousEndDate: Date;
+      
+      if (period === 'week') {
+        startDate = startOfWeek(now, { weekStartsOn: 1 });
+        endDate = endOfWeek(now, { weekStartsOn: 1 });
+        previousStartDate = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+        previousEndDate = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+      } else if (period === 'month') {
+        startDate = startOfMonth(now);
+        endDate = now;
+        previousStartDate = startOfMonth(subMonths(now, 1));
+        previousEndDate = startOfMonth(now);
+      } else {
+        startDate = startOfQuarter(now);
+        endDate = now;
+        previousStartDate = startOfQuarter(subQuarters(now, 1));
+        previousEndDate = startOfQuarter(now);
+      }
 
-      // Fetch current week time entries
+      // Fetch current period time entries
       const { data: currentEntries, error: currentError } = await supabase
         .from('time_entries')
         .select('start_time, duration_minutes, end_time')
         .eq('user_id', user.id)
-        .gte('start_time', weekStart.toISOString())
-        .lte('start_time', weekEnd.toISOString());
+        .gte('start_time', startDate.toISOString())
+        .lte('start_time', endDate.toISOString());
 
-      // Fetch previous week time entries for comparison
-      const { data: previousEntries, error: previousError } = await supabase
+      // Fetch previous period time entries for comparison
+      const { data: previousEntries } = await supabase
         .from('time_entries')
         .select('duration_minutes')
         .eq('user_id', user.id)
-        .gte('start_time', previousWeekStart.toISOString())
-        .lte('start_time', previousWeekEnd.toISOString());
+        .gte('start_time', previousStartDate.toISOString())
+        .lt('start_time', previousEndDate.toISOString());
 
       if (currentError) {
         console.error('Error fetching time entries:', currentError);
@@ -74,49 +101,103 @@ export function HoursChart() {
         return;
       }
 
-      // Calculate previous week total
+      // Calculate previous period total
       const prevTotal = previousEntries?.reduce((sum, entry) => {
         return sum + (entry.duration_minutes || 0);
       }, 0) || 0;
-      setPreviousWeekTotal(prevTotal / 60);
+      setPreviousPeriodTotal(prevTotal / 60);
 
-      // Initialize daily data for the week
-      const dailyHours: DailyData[] = [];
-      for (let i = 0; i < 7; i++) {
-        const date = addDays(weekStart, i);
-        dailyHours.push({
-          day: format(date, 'EEE', { locale: ptBR }),
+      // Initialize data based on period
+      let chartData: DataPoint[] = [];
+      
+      if (period === 'week') {
+        // Daily view for week
+        for (let i = 0; i < 7; i++) {
+          const date = addDays(startDate, i);
+          chartData.push({
+            label: format(date, 'EEE', { locale: ptBR }),
+            hours: 0,
+            date,
+          });
+        }
+        
+        currentEntries?.forEach(entry => {
+          const entryDate = parseISO(entry.start_time);
+          const dayIndex = chartData.findIndex(d => isSameDay(d.date, entryDate));
+          if (dayIndex !== -1 && entry.duration_minutes) {
+            chartData[dayIndex].hours += entry.duration_minutes / 60;
+          }
+        });
+      } else if (period === 'month') {
+        // Weekly view for month
+        const weeks = eachWeekOfInterval({ start: startDate, end: endDate }, { weekStartsOn: 1 });
+        chartData = weeks.map((weekStart, index) => ({
+          label: `Sem ${index + 1}`,
           hours: 0,
-          date,
+          date: weekStart,
+        }));
+        
+        currentEntries?.forEach(entry => {
+          const entryDate = parseISO(entry.start_time);
+          const weekIndex = weeks.findIndex((weekStart, i) => {
+            const weekEnd = i < weeks.length - 1 ? weeks[i + 1] : endDate;
+            return entryDate >= weekStart && entryDate < weekEnd;
+          });
+          if (weekIndex !== -1 && entry.duration_minutes) {
+            chartData[weekIndex].hours += entry.duration_minutes / 60;
+          }
+        });
+      } else {
+        // Monthly view for quarter
+        for (let i = 0; i < 3; i++) {
+          const monthDate = addDays(startDate, i * 30);
+          chartData.push({
+            label: format(monthDate, 'MMM', { locale: ptBR }),
+            hours: 0,
+            date: startOfMonth(monthDate),
+          });
+        }
+        
+        currentEntries?.forEach(entry => {
+          const entryDate = parseISO(entry.start_time);
+          const monthIndex = chartData.findIndex(d => 
+            format(entryDate, 'yyyy-MM') === format(d.date, 'yyyy-MM')
+          );
+          if (monthIndex !== -1 && entry.duration_minutes) {
+            chartData[monthIndex].hours += entry.duration_minutes / 60;
+          }
         });
       }
 
-      // Sum hours by day
-      currentEntries?.forEach(entry => {
-        const entryDate = parseISO(entry.start_time);
-        const dayIndex = dailyHours.findIndex(d => isSameDay(d.date, entryDate));
-        if (dayIndex !== -1 && entry.duration_minutes) {
-          dailyHours[dayIndex].hours += entry.duration_minutes / 60;
-        }
-      });
-
-      setData(dailyHours);
+      setData(chartData);
       setLoading(false);
     };
 
     fetchHoursData();
-  }, [user]);
+  }, [user, period]);
 
   const totalHours = data.reduce((acc, item) => acc + item.hours, 0);
   const workDays = data.filter(d => d.hours > 0);
   const avgHours = workDays.length > 0 ? totalHours / workDays.length : 0;
   const maxHours = Math.max(...data.map(d => d.hours), 0);
-  const mostProductiveDay = data.find(d => d.hours === maxHours && maxHours > 0);
+  const mostProductiveLabel = data.find(d => d.hours === maxHours && maxHours > 0)?.label;
   
-  const growth = previousWeekTotal > 0 
-    ? ((totalHours - previousWeekTotal) / previousWeekTotal * 100).toFixed(0)
+  const growth = previousPeriodTotal > 0 
+    ? ((totalHours - previousPeriodTotal) / previousPeriodTotal * 100).toFixed(0)
     : totalHours > 0 ? '100' : '0';
   const isPositiveGrowth = Number(growth) >= 0;
+
+  const periodLabels = {
+    week: 'Esta semana',
+    month: 'Este mês',
+    quarter: 'Este trimestre',
+  };
+
+  const goalLabels = {
+    week: { label: 'Meta semanal', value: '40h' },
+    month: { label: 'Meta mensal', value: '160h' },
+    quarter: { label: 'Meta trimestral', value: '480h' },
+  };
 
   if (loading) {
     return (
@@ -127,7 +208,7 @@ export function HoursChart() {
           </div>
           <div>
             <h2 className="font-semibold">Horas Trabalhadas</h2>
-            <p className="text-xs text-muted-foreground">Esta semana</p>
+            <p className="text-xs text-muted-foreground">{periodLabels[period]}</p>
           </div>
         </div>
         <div className="h-[200px] flex items-center justify-center">
@@ -146,14 +227,26 @@ export function HoursChart() {
           </div>
           <div>
             <h2 className="font-semibold">Horas Trabalhadas</h2>
-            <p className="text-xs text-muted-foreground">Esta semana</p>
+            <p className="text-xs text-muted-foreground">{periodLabels[period]}</p>
           </div>
         </div>
-        <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-          isPositiveGrowth ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'
-        }`}>
-          {isPositiveGrowth ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {isPositiveGrowth ? '+' : ''}{growth}%
+        <div className="flex items-center gap-2">
+          <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+            <SelectTrigger className="w-[120px] h-8 text-xs glass-border bg-background/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="glass-card">
+              <SelectItem value="week">Semanal</SelectItem>
+              <SelectItem value="month">Mensal</SelectItem>
+              <SelectItem value="quarter">Trimestral</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+            isPositiveGrowth ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'
+          }`}>
+            {isPositiveGrowth ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {isPositiveGrowth ? '+' : ''}{growth}%
+          </div>
         </div>
       </div>
 
@@ -177,7 +270,7 @@ export function HoursChart() {
               vertical={false}
             />
             <XAxis 
-              dataKey="day" 
+              dataKey="label" 
               axisLine={false}
               tickLine={false}
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
@@ -201,16 +294,16 @@ export function HoursChart() {
 
       <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
         <div>
-          <p className="text-xs text-muted-foreground">Dia mais produtivo</p>
-          <p className="text-lg font-semibold">{mostProductiveDay?.day || '-'}</p>
+          <p className="text-xs text-muted-foreground">Mais produtivo</p>
+          <p className="text-lg font-semibold">{mostProductiveLabel || '-'}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Média diária</p>
+          <p className="text-xs text-muted-foreground">Média</p>
           <p className="text-lg font-semibold">{avgHours.toFixed(1)}h</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Meta semanal</p>
-          <p className="text-lg font-semibold">40h</p>
+          <p className="text-xs text-muted-foreground">{goalLabels[period].label}</p>
+          <p className="text-lg font-semibold">{goalLabels[period].value}</p>
         </div>
       </div>
     </div>
