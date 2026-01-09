@@ -354,6 +354,7 @@ export type Database = {
           custom_message: string | null
           estimated_start_time: string | null
           id: string
+          logo_url: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -364,6 +365,7 @@ export type Database = {
           custom_message?: string | null
           estimated_start_time?: string | null
           id?: string
+          logo_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -374,6 +376,7 @@ export type Database = {
           custom_message?: string | null
           estimated_start_time?: string | null
           id?: string
+          logo_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }

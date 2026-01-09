@@ -9,6 +9,7 @@ interface StatusPayload {
   accepting_orders: boolean;
   estimated_start_time?: string;
   custom_message?: string;
+  logo_url?: string;
 }
 
 interface ProjectStats {
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized - Admin access required');
     }
 
-    const { accepting_orders, estimated_start_time, custom_message }: StatusPayload = await req.json();
+    const { accepting_orders, estimated_start_time, custom_message, logo_url }: StatusPayload = await req.json();
 
     // Get project statistics automatically
     const now = new Date();
@@ -95,6 +96,7 @@ Deno.serve(async (req) => {
       accepting_orders,
       estimated_start_time: estimated_start_time || null,
       custom_message: custom_message || null,
+      logo_url: logo_url || null,
       updated_by: user.id,
     };
 
@@ -167,19 +169,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    const embed: Record<string, unknown> = {
+      title: '📊 Painel de Disponibilidade',
+      description: '> Acompanhe em tempo real nossa capacidade de atendimento e situação atual dos projetos.',
+      color: accepting_orders ? 0x22c55e : 0xef4444,
+      fields,
+      footer: {
+        text: `🕐 Atualizado em ${formattedDate} às ${formattedTime}`,
+      },
+      timestamp: now.toISOString(),
+    };
+
+    // Add thumbnail if logo_url is provided
+    if (logo_url && logo_url.trim()) {
+      embed.thumbnail = {
+        url: logo_url,
+      };
+    }
+
     const discordMessage = {
-      embeds: [
-        {
-          title: '📊 Painel de Disponibilidade',
-          description: '> Acompanhe em tempo real nossa capacidade de atendimento e situação atual dos projetos.',
-          color: accepting_orders ? 0x22c55e : 0xef4444,
-          fields,
-          footer: {
-            text: `🕐 Atualizado em ${formattedDate} às ${formattedTime}`,
-          },
-          timestamp: now.toISOString(),
-        },
-      ],
+      embeds: [embed],
     };
 
     // Send to Discord
@@ -206,6 +215,7 @@ Deno.serve(async (req) => {
         accepting_orders,
         estimated_start_time,
         custom_message,
+        logo_url,
         discord_sent: true,
       },
     });
