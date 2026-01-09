@@ -11,6 +11,7 @@ import {
   LogOut,
   Sparkles,
   Bell,
+  UserCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
   { name: 'Financeiro', href: '/finances', icon: DollarSign },
   { name: 'Notificações', href: '/notifications', icon: Bell },
+  { name: 'Meu Perfil', href: '/profile', icon: UserCircle },
   { name: 'Configurações', href: '/settings', icon: Settings },
 ];
 
