@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -27,6 +27,8 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 
+const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clientes', href: '/clients', icon: Users },
@@ -50,9 +52,16 @@ export function Sidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
-  const [adminOpen, setAdminOpen] = useState(
-    location.pathname.startsWith('/admin')
-  );
+  
+  const [adminOpen, setAdminOpen] = useState(() => {
+    const saved = localStorage.getItem(ADMIN_MENU_KEY);
+    if (saved !== null) return saved === 'true';
+    return location.pathname.startsWith('/admin');
+  });
+
+  useEffect(() => {
+    localStorage.setItem(ADMIN_MENU_KEY, String(adminOpen));
+  }, [adminOpen]);
 
   const renderNavItem = (item: typeof navigation[0], index: number) => {
     const isActive = location.pathname === item.href;
@@ -124,7 +133,7 @@ export function Sidebar() {
                   adminOpen && "rotate-180"
                 )} />
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1">
+              <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
                 {adminNavigation.map((item, index) => renderNavItem(item, index))}
               </CollapsibleContent>
             </Collapsible>
