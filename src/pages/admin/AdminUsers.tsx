@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, Users, Eye } from "lucide-react";
+import { Search, Users, Eye, UserPlus, RefreshCw, UserX, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { UserStatusBadge } from "@/components/admin/UserStatusBadge";
+import { PlanBadge } from "@/components/admin/PlanBadge";
+import { AddUserDialog } from "@/components/admin/AddUserDialog";
+import { RenewPlanDialog } from "@/components/admin/RenewPlanDialog";
+import { DeactivateUserDialog } from "@/components/admin/DeactivateUserDialog";
 
 interface UserProfile {
   id: string;
@@ -31,6 +36,14 @@ interface UserProfile {
   email: string | null;
   created_at: string;
   business_name: string | null;
+  is_active: boolean | null;
+}
+
+interface UserSubscription {
+  user_id: string;
+  plan_type: string;
+  end_date: string | null;
+  status: string;
 }
 
 interface UserDetails {
@@ -43,6 +56,18 @@ interface UserDetails {
 export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [renewPlanUser, setRenewPlanUser] = useState<{
+    userId: string;
+    userName: string;
+    currentPlan?: string;
+    currentEndDate?: string | null;
+  } | null>(null);
+  const [deactivateUser, setDeactivateUser] = useState<{
+    userId: string;
+    userName: string;
+    isActive: boolean;
+  } | null>(null);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -67,9 +92,23 @@ export default function AdminUsers() {
     },
   });
 
+  const { data: subscriptions } = useQuery({
+    queryKey: ['admin-subscriptions'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_subscriptions')
+        .select('*');
+      return (data || []) as UserSubscription[];
+    },
+  });
+
   const getRoleForUser = (userId: string) => {
     const role = userRoles?.find(r => r.user_id === userId);
     return role?.role || 'user';
+  };
+
+  const getSubscriptionForUser = (userId: string) => {
+    return subscriptions?.find(s => s.user_id === userId);
   };
 
   const filteredUsers = users?.filter(user => 
@@ -109,6 +148,10 @@ export default function AdminUsers() {
               {users?.length || 0} usuários cadastrados
             </p>
           </div>
+          <Button onClick={() => setAddUserOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Adicionar Usuário
+          </Button>
         </div>
 
         <Card>
@@ -135,42 +178,91 @@ export default function AdminUsers() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Plano</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Cadastrado em</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers?.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.full_name || "Sem nome"}
-                      </TableCell>
-                      <TableCell>{user.email || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleForUser(user.user_id) === 'admin' ? 'default' : 'secondary'}>
-                          {getRoleForUser(user.user_id)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(user.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewUser(user)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredUsers?.map((user) => {
+                    const subscription = getSubscriptionForUser(user.user_id);
+                    const isActive = user.is_active !== false;
+                    const isCurrentUserAdmin = getRoleForUser(user.user_id) === 'admin';
+                    
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          {user.full_name || "Sem nome"}
+                        </TableCell>
+                        <TableCell>{user.email || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant={isCurrentUserAdmin ? 'default' : 'secondary'}>
+                            {getRoleForUser(user.user_id)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <PlanBadge
+                            planType={subscription?.plan_type || 'free'}
+                            endDate={subscription?.end_date}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UserStatusBadge isActive={isActive} />
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(user.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewUser(user)}
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setRenewPlanUser({
+                                userId: user.user_id,
+                                userName: user.full_name || user.email || 'Usuário',
+                                currentPlan: subscription?.plan_type,
+                                currentEndDate: subscription?.end_date,
+                              })}
+                              title="Renovar plano"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                            {!isCurrentUserAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeactivateUser({
+                                  userId: user.user_id,
+                                  userName: user.full_name || user.email || 'Usuário',
+                                  isActive,
+                                })}
+                                title={isActive ? "Desativar usuário" : "Ativar usuário"}
+                                className={isActive ? "text-destructive hover:text-destructive" : "text-green-600 hover:text-green-600"}
+                              >
+                                {isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
           </CardContent>
         </Card>
 
+        {/* View User Details Dialog */}
         <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
           <DialogContent>
             <DialogHeader>
@@ -222,6 +314,32 @@ export default function AdminUsers() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Add User Dialog */}
+        <AddUserDialog open={addUserOpen} onOpenChange={setAddUserOpen} />
+
+        {/* Renew Plan Dialog */}
+        {renewPlanUser && (
+          <RenewPlanDialog
+            open={!!renewPlanUser}
+            onOpenChange={() => setRenewPlanUser(null)}
+            userId={renewPlanUser.userId}
+            userName={renewPlanUser.userName}
+            currentPlan={renewPlanUser.currentPlan}
+            currentEndDate={renewPlanUser.currentEndDate}
+          />
+        )}
+
+        {/* Deactivate User Dialog */}
+        {deactivateUser && (
+          <DeactivateUserDialog
+            open={!!deactivateUser}
+            onOpenChange={() => setDeactivateUser(null)}
+            userId={deactivateUser.userId}
+            userName={deactivateUser.userName}
+            isActive={deactivateUser.isActive}
+          />
+        )}
       </div>
     </AppLayout>
   );
