@@ -207,6 +207,7 @@ export type Database = {
           full_name: string | null
           hourly_rate: number | null
           id: string
+          is_active: boolean | null
           logo_url: string | null
           phone: string | null
           specialty: string | null
@@ -220,6 +221,7 @@ export type Database = {
           full_name?: string | null
           hourly_rate?: number | null
           id?: string
+          is_active?: boolean | null
           logo_url?: string | null
           phone?: string | null
           specialty?: string | null
@@ -233,6 +235,7 @@ export type Database = {
           full_name?: string | null
           hourly_rate?: number | null
           id?: string
+          is_active?: boolean | null
           logo_url?: string | null
           phone?: string | null
           specialty?: string | null
@@ -489,6 +492,39 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string | null
+          end_date: string | null
+          id: string
+          plan_type: string
+          start_date: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          plan_type?: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          plan_type?: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
