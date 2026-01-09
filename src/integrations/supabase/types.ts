@@ -351,6 +351,8 @@ export type Database = {
           accepting_orders: boolean
           active_orders: number
           created_at: string
+          custom_message: string | null
+          estimated_start_time: string | null
           id: string
           updated_at: string
           updated_by: string | null
@@ -359,6 +361,8 @@ export type Database = {
           accepting_orders?: boolean
           active_orders?: number
           created_at?: string
+          custom_message?: string | null
+          estimated_start_time?: string | null
           id?: string
           updated_at?: string
           updated_by?: string | null
@@ -367,6 +371,8 @@ export type Database = {
           accepting_orders?: boolean
           active_orders?: number
           created_at?: string
+          custom_message?: string | null
+          estimated_start_time?: string | null
           id?: string
           updated_at?: string
           updated_by?: string | null

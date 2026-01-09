@@ -6,8 +6,15 @@ const corsHeaders = {
 };
 
 interface StatusPayload {
-  active_orders: number;
   accepting_orders: boolean;
+  estimated_start_time?: string;
+  custom_message?: string;
+}
+
+interface ProjectStats {
+  in_progress: number;
+  completed_this_month: number;
+  pending: number;
 }
 
 Deno.serve(async (req) => {
@@ -47,7 +54,34 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized - Admin access required');
     }
 
-    const { active_orders, accepting_orders }: StatusPayload = await req.json();
+    const { accepting_orders, estimated_start_time, custom_message }: StatusPayload = await req.json();
+
+    // Get project statistics automatically
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Count projects by status
+    const { data: inProgressData, count: inProgressCount } = await supabase
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'in_progress');
+
+    const { data: pendingData, count: pendingCount } = await supabase
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    const { data: completedData, count: completedCount } = await supabase
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .gte('completed_at', firstDayOfMonth.toISOString());
+
+    const stats: ProjectStats = {
+      in_progress: inProgressCount || 0,
+      completed_this_month: completedCount || 0,
+      pending: pendingCount || 0,
+    };
 
     // Update status in database
     const { data: existingStatus } = await supabase
@@ -56,27 +90,26 @@ Deno.serve(async (req) => {
       .limit(1)
       .single();
 
+    const statusData = {
+      active_orders: stats.in_progress,
+      accepting_orders,
+      estimated_start_time: estimated_start_time || null,
+      custom_message: custom_message || null,
+      updated_by: user.id,
+    };
+
     if (existingStatus) {
       await supabase
         .from('shop_status')
-        .update({
-          active_orders,
-          accepting_orders,
-          updated_by: user.id,
-        })
+        .update(statusData)
         .eq('id', existingStatus.id);
     } else {
       await supabase
         .from('shop_status')
-        .insert({
-          active_orders,
-          accepting_orders,
-          updated_by: user.id,
-        });
+        .insert(statusData);
     }
 
     // Format message for Discord
-    const now = new Date();
     const formattedDate = now.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -87,28 +120,62 @@ Deno.serve(async (req) => {
       minute: '2-digit',
     });
 
-    const acceptingEmoji = accepting_orders ? '✅' : '❌';
-    const acceptingText = accepting_orders ? 'SIM' : 'NÃO';
+    const acceptingEmoji = accepting_orders ? '✅' : '🔴';
+    const acceptingStatus = accepting_orders 
+      ? '**ACEITANDO NOVOS PROJETOS**\nEstamos disponíveis para novos trabalhos!' 
+      : '**TEMPORARIAMENTE FECHADO**\nNo momento não estamos aceitando novos projetos.';
+
+    // Build professional embed fields
+    const fields = [
+      {
+        name: '📦 Em Andamento',
+        value: `\`\`\`${stats.in_progress} projeto${stats.in_progress !== 1 ? 's' : ''}\`\`\``,
+        inline: true,
+      },
+      {
+        name: '✅ Concluídos (mês)',
+        value: `\`\`\`${stats.completed_this_month} projeto${stats.completed_this_month !== 1 ? 's' : ''}\`\`\``,
+        inline: true,
+      },
+      {
+        name: '⏳ Na Fila',
+        value: `\`\`\`${stats.pending} projeto${stats.pending !== 1 ? 's' : ''}\`\`\``,
+        inline: true,
+      },
+      {
+        name: `${acceptingEmoji} Disponibilidade`,
+        value: acceptingStatus,
+        inline: false,
+      },
+    ];
+
+    // Add estimated start time if provided
+    if (estimated_start_time && estimated_start_time.trim()) {
+      fields.push({
+        name: '⏱️ Previsão de Início',
+        value: `Novos projetos: **${estimated_start_time}**`,
+        inline: false,
+      });
+    }
+
+    // Add custom message if provided
+    if (custom_message && custom_message.trim()) {
+      fields.push({
+        name: '💬 Observações',
+        value: custom_message,
+        inline: false,
+      });
+    }
 
     const discordMessage = {
       embeds: [
         {
-          title: '📦 STATUS DA LOJA',
-          color: accepting_orders ? 0x22c55e : 0xef4444, // green or red
-          fields: [
-            {
-              name: '📊 Encomendas Ativas',
-              value: `**${active_orders}**`,
-              inline: true,
-            },
-            {
-              name: `${acceptingEmoji} Aceitando Novas Encomendas`,
-              value: `**${acceptingText}**`,
-              inline: true,
-            },
-          ],
+          title: '📊 Painel de Disponibilidade',
+          description: '> Acompanhe em tempo real nossa capacidade de atendimento e situação atual dos projetos.',
+          color: accepting_orders ? 0x22c55e : 0xef4444,
+          fields,
           footer: {
-            text: `🕐 Atualizado: ${formattedDate} às ${formattedTime}`,
+            text: `🕐 Atualizado em ${formattedDate} às ${formattedTime}`,
           },
           timestamp: now.toISOString(),
         },
@@ -135,14 +202,20 @@ Deno.serve(async (req) => {
       action: 'update_shop_status',
       entity_type: 'shop_status',
       details: {
-        active_orders,
+        stats,
         accepting_orders,
+        estimated_start_time,
+        custom_message,
         discord_sent: true,
       },
     });
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Status updated and sent to Discord' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Status updated and sent to Discord',
+        stats,
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
