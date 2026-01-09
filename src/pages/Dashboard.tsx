@@ -1,5 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { RevenueChart } from '@/components/dashboard/RevenueChart';
+import { HoursChart } from '@/components/dashboard/HoursChart';
 import { 
   FolderKanban, 
   Clock, 
@@ -8,7 +10,6 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
-  Timer,
   ArrowUpRight,
   Sparkles,
   Calendar,
@@ -98,12 +99,18 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Charts Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <RevenueChart />
+          <HoursChart />
+        </div>
+
         {/* Content Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Recent Projects */}
           <div 
             className="glass-card rounded-2xl p-6 animate-fade-in-up"
-            style={{ animationDelay: '400ms' }}
+            style={{ animationDelay: '800ms' }}
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -138,7 +145,7 @@ export default function Dashboard() {
           {/* Pending Tasks */}
           <div 
             className="glass-card rounded-2xl p-6 animate-fade-in-up"
-            style={{ animationDelay: '500ms' }}
+            style={{ animationDelay: '900ms' }}
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -166,41 +173,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Time Tracking Summary */}
-          <div 
-            className="glass-card rounded-2xl p-6 animate-fade-in-up"
-            style={{ animationDelay: '600ms' }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
-                  <Timer className="h-5 w-5 text-success" />
-                </div>
-                <div>
-                  <h2 className="font-semibold">Resumo de Horas</h2>
-                  <p className="text-xs text-muted-foreground">Tempo trabalhado esta semana</p>
-                </div>
-              </div>
-              <button className="flex items-center gap-1 rounded-lg bg-secondary/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
-                Iniciar Timer
-                <ArrowUpRight className="h-3 w-3" />
-              </button>
-            </div>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/50">
-                <Timer className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-medium">Sem registros</h3>
-              <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-                Use o cronômetro para registrar suas horas de trabalho
-              </p>
-            </div>
-          </div>
-
           {/* Upcoming Deadlines */}
           <div 
             className="glass-card rounded-2xl p-6 animate-fade-in-up"
-            style={{ animationDelay: '700ms' }}
+            style={{ animationDelay: '1000ms' }}
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
