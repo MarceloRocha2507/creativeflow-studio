@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   AreaChart,
   Area,
@@ -7,17 +8,16 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { DollarSign, TrendingUp } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { startOfMonth, subMonths, format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-// Demo data - in production this would come from the database
-const data = [
-  { month: 'Jan', value: 4500 },
-  { month: 'Fev', value: 5200 },
-  { month: 'Mar', value: 4800 },
-  { month: 'Abr', value: 6100 },
-  { month: 'Mai', value: 5800 },
-  { month: 'Jun', value: 7200 },
-];
+interface MonthlyData {
+  month: string;
+  value: number;
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -34,11 +34,92 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function RevenueChart() {
+  const { user } = useAuth();
+  const [data, setData] = useState<MonthlyData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchRevenueData = async () => {
+      setLoading(true);
+      
+      // Get payments from the last 6 months
+      const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
+      
+      const { data: payments, error } = await supabase
+        .from('payments')
+        .select('amount, payment_date, status')
+        .eq('user_id', user.id)
+        .eq('status', 'paid')
+        .gte('payment_date', sixMonthsAgo.toISOString().split('T')[0]);
+
+      if (error) {
+        console.error('Error fetching payments:', error);
+        setLoading(false);
+        return;
+      }
+
+      // Group payments by month
+      const monthlyRevenue: Record<string, number> = {};
+      
+      // Initialize last 6 months with 0
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = subMonths(new Date(), i);
+        const monthKey = format(monthDate, 'yyyy-MM');
+        monthlyRevenue[monthKey] = 0;
+      }
+
+      // Sum payments by month
+      payments?.forEach(payment => {
+        if (payment.payment_date) {
+          const monthKey = payment.payment_date.substring(0, 7); // yyyy-MM
+          if (monthlyRevenue[monthKey] !== undefined) {
+            monthlyRevenue[monthKey] += Number(payment.amount);
+          }
+        }
+      });
+
+      // Convert to chart data format
+      const chartData = Object.entries(monthlyRevenue).map(([key, value]) => ({
+        month: format(parseISO(`${key}-01`), 'MMM', { locale: ptBR }),
+        value,
+      }));
+
+      setData(chartData);
+      setLoading(false);
+    };
+
+    fetchRevenueData();
+  }, [user]);
+
   const total = data.reduce((acc, item) => acc + item.value, 0);
-  const average = total / data.length;
-  const lastMonth = data[data.length - 1].value;
-  const previousMonth = data[data.length - 2].value;
-  const growth = ((lastMonth - previousMonth) / previousMonth * 100).toFixed(1);
+  const average = data.length > 0 ? total / data.length : 0;
+  const lastMonth = data.length > 0 ? data[data.length - 1].value : 0;
+  const previousMonth = data.length > 1 ? data[data.length - 2].value : 0;
+  const growth = previousMonth > 0 
+    ? ((lastMonth - previousMonth) / previousMonth * 100).toFixed(1) 
+    : '0.0';
+  const isPositiveGrowth = Number(growth) >= 0;
+
+  if (loading) {
+    return (
+      <div className="glass-card rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <DollarSign className="h-5 w-5 text-primary icon-glow" />
+          </div>
+          <div>
+            <h2 className="font-semibold">Faturamento Mensal</h2>
+            <p className="text-xs text-muted-foreground">Últimos 6 meses</p>
+          </div>
+        </div>
+        <div className="h-[200px] flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Carregando...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-card rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
@@ -52,9 +133,11 @@ export function RevenueChart() {
             <p className="text-xs text-muted-foreground">Últimos 6 meses</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
-          <TrendingUp className="h-3 w-3" />
-          +{growth}%
+        <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+          isPositiveGrowth ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+        }`}>
+          {isPositiveGrowth ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+          {isPositiveGrowth ? '+' : ''}{growth}%
         </div>
       </div>
 
@@ -87,7 +170,7 @@ export function RevenueChart() {
               axisLine={false}
               tickLine={false}
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-              tickFormatter={(value) => `${value / 1000}k`}
+              tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : value}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
