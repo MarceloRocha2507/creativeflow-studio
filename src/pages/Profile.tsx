@@ -277,200 +277,176 @@ export default function Profile() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
-        {/* Header with Avatar */}
-        <Card className="glass-card glass-border overflow-hidden">
-          <div className="h-24 gradient-primary opacity-80" />
-          <CardContent className="relative pb-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-12">
-              {/* Avatar */}
-              <div className="relative group">
-                <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-                  <AvatarImage src={profile?.logo_url || undefined} />
-                  <AvatarFallback className="text-2xl gradient-primary text-primary-foreground">
-                    {getInitials(profile?.full_name || null, user?.email || null)}
-                  </AvatarFallback>
-                </Avatar>
-                <button
-                  onClick={handleAvatarClick}
-                  disabled={isUploadingAvatar}
-                  className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                >
-                  {isUploadingAvatar ? (
-                    <Loader2 className="h-6 w-6 text-white animate-spin" />
-                  ) : (
-                    <Camera className="h-6 w-6 text-white" />
-                  )}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-              </div>
-
-              {/* User Info */}
-              <div className="text-center sm:text-left flex-1">
-                <h1 className="text-2xl font-bold text-gradient">
-                  {profile?.full_name || 'Seu Nome'}
-                </h1>
-                <p className="text-muted-foreground">{user?.email}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
+        {/* Header Compacto com Avatar */}
+        <div className="flex items-center gap-4 mb-2">
+          <div className="relative group">
+            <Avatar className="h-16 w-16 border-2 border-primary/30 shadow-lg">
+              <AvatarImage src={profile?.logo_url || undefined} />
+              <AvatarFallback className="text-lg gradient-primary text-primary-foreground">
+                {getInitials(profile?.full_name || null, user?.email || null)}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={handleAvatarClick}
+              disabled={isUploadingAvatar}
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              {isUploadingAvatar ? (
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 text-white" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gradient">
+              {profile?.full_name || 'Seu Nome'}
+            </h1>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
+          </div>
+        </div>
 
         {/* Personal Information */}
         <Card className="glass-card glass-border">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle className="text-gradient">Informações Pessoais</CardTitle>
+              <User className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Informações Pessoais</CardTitle>
             </div>
-            <CardDescription>Atualize seus dados básicos</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Nome Completo</Label>
+          <CardContent className="pt-0 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label className="text-sm">Nome Completo</Label>
                 <Input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Seu nome completo"
-                  className="glass border-white/10"
+                  placeholder="Seu nome"
+                  className="glass border-white/10 h-9"
                 />
                 {profileErrors.fullName && (
-                  <p className="text-sm text-destructive">{profileErrors.fullName}</p>
+                  <p className="text-xs text-destructive">{profileErrors.fullName}</p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label>Telefone</Label>
+              <div className="space-y-1">
+                <Label className="text-sm">Telefone</Label>
                 <Input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="(11) 99999-9999"
-                  className="glass border-white/10"
+                  className="glass border-white/10 h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
+              <div className="space-y-1">
+                <Label className="text-sm">Email</Label>
                 <Input
                   value={user?.email || ''}
                   disabled
-                  className="glass border-white/10 bg-muted/30"
+                  className="glass border-white/10 bg-muted/30 h-9"
                 />
-                <p className="text-xs text-muted-foreground">
-                  O email não pode ser alterado
-                </p>
               </div>
             </div>
-            <Button onClick={saveProfile} disabled={isSaving} className="gradient-primary glow-primary">
-              {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Salvar Alterações'}
+            <Button onClick={saveProfile} disabled={isSaving} size="sm" className="gradient-primary glow-primary">
+              {isSaving ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Salvando...</> : 'Salvar Alterações'}
             </Button>
           </CardContent>
         </Card>
 
         {/* Change Password */}
         <Card className="glass-card glass-border">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-primary" />
-              <CardTitle className="text-gradient">Alterar Senha</CardTitle>
+              <Lock className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Alterar Senha</CardTitle>
             </div>
-            <CardDescription>Atualize sua senha de acesso</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Senha Atual</Label>
+          <CardContent className="pt-0 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label className="text-sm">Senha Atual</Label>
                 <Input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="glass border-white/10 max-w-sm"
+                  className="glass border-white/10 h-9"
                 />
                 {passwordErrors.currentPassword && (
-                  <p className="text-sm text-destructive">{passwordErrors.currentPassword}</p>
+                  <p className="text-xs text-destructive">{passwordErrors.currentPassword}</p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label>Nova Senha</Label>
+              <div className="space-y-1">
+                <Label className="text-sm">Nova Senha</Label>
                 <Input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="glass border-white/10"
+                  className="glass border-white/10 h-9"
                 />
                 {passwordErrors.newPassword && (
-                  <p className="text-sm text-destructive">{passwordErrors.newPassword}</p>
+                  <p className="text-xs text-destructive">{passwordErrors.newPassword}</p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label>Confirmar Nova Senha</Label>
+              <div className="space-y-1">
+                <Label className="text-sm">Confirmar</Label>
                 <Input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="glass border-white/10"
+                  className="glass border-white/10 h-9"
                 />
                 {passwordErrors.confirmPassword && (
-                  <p className="text-sm text-destructive">{passwordErrors.confirmPassword}</p>
+                  <p className="text-xs text-destructive">{passwordErrors.confirmPassword}</p>
                 )}
               </div>
             </div>
-            <Button onClick={changePassword} disabled={isSavingPassword} className="gradient-primary glow-primary">
-              {isSavingPassword ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Alterando...</> : 'Alterar Senha'}
+            <Button onClick={changePassword} disabled={isSavingPassword} size="sm" className="gradient-primary glow-primary">
+              {isSavingPassword ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Alterando...</> : 'Alterar Senha'}
             </Button>
           </CardContent>
         </Card>
 
         {/* Notification Preferences */}
         <Card className="glass-card glass-border">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              <CardTitle className="text-gradient">Preferências de Notificação</CardTitle>
+              <Bell className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Notificações</CardTitle>
             </div>
-            <CardDescription>Configure como deseja receber alertas</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-xl glass glass-border p-4">
-              <div className="space-y-0.5">
-                <Label className="text-base">Lembretes de Pagamento</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receba alertas sobre pagamentos pendentes
-                </p>
+          <CardContent className="pt-0 space-y-2">
+            <div className="flex items-center justify-between rounded-lg glass glass-border p-3">
+              <div>
+                <Label className="text-sm">Lembretes de Pagamento</Label>
+                <p className="text-xs text-muted-foreground">Alertas sobre pagamentos pendentes</p>
               </div>
               <Switch
                 checked={notificationSettings.payment_reminder}
                 onCheckedChange={(checked) =>
-                  setNotificationSettings((prev) => ({
-                    ...prev,
-                    payment_reminder: checked,
-                  }))
+                  setNotificationSettings((prev) => ({ ...prev, payment_reminder: checked }))
                 }
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-xl glass glass-border p-4">
-              <div className="space-y-0.5">
-                <Label className="text-base">Resumo Diário</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receba um resumo diário de pendências
-                </p>
+            <div className="flex items-center justify-between rounded-lg glass glass-border p-3">
+              <div>
+                <Label className="text-sm">Resumo Diário</Label>
+                <p className="text-xs text-muted-foreground">Resumo diário de pendências</p>
               </div>
               <Switch
                 checked={notificationSettings.daily_summary}
                 onCheckedChange={(checked) =>
-                  setNotificationSettings((prev) => ({
-                    ...prev,
-                    daily_summary: checked,
-                  }))
+                  setNotificationSettings((prev) => ({ ...prev, daily_summary: checked }))
                 }
               />
             </div>
@@ -478,13 +454,11 @@ export default function Profile() {
             <Button
               onClick={saveNotificationSettings}
               disabled={isSavingNotifications}
+              size="sm"
               className="gradient-primary glow-primary"
             >
               {isSavingNotifications ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
+                <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Salvando...</>
               ) : (
                 'Salvar Preferências'
               )}
@@ -494,26 +468,24 @@ export default function Profile() {
 
         {/* Logout */}
         <Card className="glass-card glass-border border-destructive/20">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-destructive">Sair da Conta</h3>
-                <p className="text-sm text-muted-foreground">
-                  Você será desconectado de todos os dispositivos
-                </p>
+                <h3 className="text-sm font-semibold text-destructive">Sair da Conta</h3>
+                <p className="text-xs text-muted-foreground">Desconectar de todos os dispositivos</p>
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="gap-2">
-                    <LogOut className="h-4 w-4" />
-                    Sair da Conta
+                  <Button variant="destructive" size="sm" className="gap-2">
+                    <LogOut className="h-3 w-3" />
+                    Sair
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="glass-card glass-border">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar saída</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Tem certeza que deseja sair da sua conta? Você precisará fazer login novamente para acessar o sistema.
+                      Tem certeza que deseja sair da sua conta?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
