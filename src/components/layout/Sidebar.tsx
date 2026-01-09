@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -15,10 +16,16 @@ import {
   Shield,
   Key,
   ScrollText,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -43,6 +50,9 @@ export function Sidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  const [adminOpen, setAdminOpen] = useState(
+    location.pathname.startsWith('/admin')
+  );
 
   const renderNavItem = (item: typeof navigation[0], index: number) => {
     const isActive = location.pathname === item.href;
@@ -106,14 +116,18 @@ export function Sidebar() {
 
           {/* Admin Section */}
           {isAdmin && (
-            <>
-              <div className="mb-4 mt-6 px-3">
-                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
-                  Administração
-                </span>
-              </div>
-              {adminNavigation.map((item, index) => renderNavItem(item, index))}
-            </>
+            <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="mt-4">
+              <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+                <span>Administração</span>
+                <ChevronDown className={cn(
+                  "h-4 w-4 transition-transform duration-200",
+                  adminOpen && "rotate-180"
+                )} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                {adminNavigation.map((item, index) => renderNavItem(item, index))}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </nav>
 
