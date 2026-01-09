@@ -17,6 +17,7 @@ import {
   Key,
   ScrollText,
   ChevronDown,
+  Store,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -46,6 +47,7 @@ const adminNavigation = [
   { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Permissões', href: '/admin/roles', icon: Key },
   { name: 'Logs', href: '/admin/logs', icon: ScrollText },
+  { name: 'Status da Loja', href: '/admin/shop-status', icon: Store },
 ];
 
 export function Sidebar() {
