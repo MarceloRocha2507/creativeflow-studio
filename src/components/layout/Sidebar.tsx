@@ -56,7 +56,7 @@ export function Sidebar() {
   const [adminOpen, setAdminOpen] = useState(() => {
     const saved = localStorage.getItem(ADMIN_MENU_KEY);
     if (saved !== null) return saved === 'true';
-    return location.pathname.startsWith('/admin');
+    return false;
   });
 
   useEffect(() => {
