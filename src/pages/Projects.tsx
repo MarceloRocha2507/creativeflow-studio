@@ -121,7 +121,9 @@ export default function Projects() {
   const [packageTotalValue, setPackageTotalValue] = useState('');
   const [packageTotalArts, setPackageTotalArts] = useState('');
   const [artNames, setArtNames] = useState<string[]>([]);
-
+  
+  // Form wizard step
+  const [formStep, setFormStep] = useState(1);
   // Effect to manage art names array based on package total
   useEffect(() => {
     if (projectType === 'package') {
@@ -181,6 +183,15 @@ export default function Projects() {
     setPackageTotalValue('');
     setPackageTotalArts('');
     setArtNames([]);
+    setFormStep(1);
+  };
+
+  const canProceedToNextStep = () => {
+    if (formStep === 1) {
+      if (projectType === 'single') return name.trim() !== '';
+      return parseInt(packageTotalArts) > 0;
+    }
+    return true;
   };
 
   const loadProjectArts = async (projectId: string) => {
@@ -369,102 +380,164 @@ export default function Projects() {
                 Novo Projeto
               </Button>
             </DialogTrigger>
-            <DialogContent className="glass-card border-white/10 max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogContent className="glass-card border-white/10 max-h-[90vh] overflow-y-auto sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="text-gradient">{editingProject ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Tipo de Projeto */}
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label>Tipo de Projeto</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setProjectType('single')}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                          projectType === 'single'
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-white/10 glass hover:border-white/20'
-                        }`}
-                      >
-                        <FileText className="h-5 w-5" />
-                        <span className="font-medium">Projeto Avulso</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProjectType('package')}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                          projectType === 'package'
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-white/10 glass hover:border-white/20'
-                        }`}
-                      >
-                        <Package className="h-5 w-5" />
-                        <span className="font-medium">Pacote de Artes</span>
-                      </button>
-                    </div>
+              
+              {/* Step Indicator */}
+              <div className="flex items-center justify-center gap-2 py-2">
+                {[
+                  { step: 1, label: 'Tipo' },
+                  { step: 2, label: 'Dados' },
+                  { step: 3, label: 'Datas' }
+                ].map(({ step, label }, index) => (
+                  <div key={step} className="flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => step < formStep && setFormStep(step)}
+                      className={`flex flex-col items-center gap-1 transition-all ${
+                        step <= formStep ? 'cursor-pointer' : 'cursor-default'
+                      }`}
+                      disabled={step > formStep}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                        formStep === step 
+                          ? 'bg-primary text-primary-foreground scale-110' 
+                          : formStep > step 
+                            ? 'bg-primary/20 text-primary' 
+                            : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {step}
+                      </div>
+                      <span className={`text-xs ${formStep === step ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                        {label}
+                      </span>
+                    </button>
+                    {index < 2 && (
+                      <div className={`w-12 h-0.5 mx-2 mt-[-12px] ${formStep > step ? 'bg-primary' : 'bg-muted'}`} />
+                    )}
                   </div>
+                ))}
+              </div>
 
-                  {/* Nome do Projeto - only for single */}
-                  {projectType === 'single' && (
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="name">Nome do Projeto *</Label>
-                      <Input 
-                        id="name" 
-                        value={name} 
-                        onChange={(e) => setName(toTitleCase(e.target.value))} 
-                        required 
-                        className="glass border-white/10" 
-                        placeholder="Digite o nome..."
-                      />
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Step 1: Tipo do Projeto */}
+                {formStep === 1 && (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Tipo de Projeto */}
+                    <div className="space-y-2">
+                      <Label>Tipo de Projeto</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setProjectType('single')}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                            projectType === 'single'
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-white/10 glass hover:border-white/20'
+                          }`}
+                        >
+                          <FileText className="h-5 w-5" />
+                          <span className="font-medium text-sm">Projeto Avulso</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProjectType('package')}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                            projectType === 'package'
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-white/10 glass hover:border-white/20'
+                          }`}
+                        >
+                          <Package className="h-5 w-5" />
+                          <span className="font-medium text-sm">Pacote de Artes</span>
+                        </button>
+                      </div>
                     </div>
-                  )}
 
-                  {/* Package fields */}
-                  {projectType === 'package' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$)</Label>
-                        <Input 
-                          id="packageTotalValue" 
-                          type="number" 
-                          step="0.01"
-                          value={packageTotalValue} 
-                          onChange={(e) => setPackageTotalValue(e.target.value)} 
-                          className="glass border-white/10" 
-                          placeholder="1500,00"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="packageTotalArts">Número Total de Artes *</Label>
-                        <Input 
-                          id="packageTotalArts" 
-                          type="number" 
-                          min="1"
-                          value={packageTotalArts} 
-                          onChange={(e) => setPackageTotalArts(e.target.value)} 
-                          required={projectType === 'package'}
-                          className="glass border-white/10" 
-                          placeholder="3"
-                        />
-                      </div>
-
-                      {/* Art names - only show after filling quantity */}
-                      {artNames.length > 0 && (
-                        <div className="space-y-3 sm:col-span-2">
-                          <div className="flex items-center gap-2 text-primary">
-                            <Package className="h-4 w-4" />
-                            <Label className="text-primary">Nomes das Artes ({artNames.length})</Label>
+                    {/* Single project fields */}
+                    {projectType === 'single' && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Nome do Projeto *</Label>
+                          <Input 
+                            id="name" 
+                            value={name} 
+                            onChange={(e) => setName(toTitleCase(e.target.value))} 
+                            className="glass border-white/10" 
+                            placeholder="Digite o nome..."
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="billingType">Tipo de Cobrança</Label>
+                            <Select value={billingType} onValueChange={setBillingType}>
+                              <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                              <SelectContent className="glass-card border-white/10">
+                                <SelectItem value="fixed">Valor Fixo</SelectItem>
+                                <SelectItem value="hourly">Por Hora</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                            {artNames.map((artName, index) => (
-                              <div key={index} className="space-y-1">
-                                <Label htmlFor={`art-${index}`} className="text-xs text-muted-foreground">
-                                  Arte {String(index + 1).padStart(2, '0')}
-                                </Label>
+                          
+                          {billingType === 'fixed' ? (
+                            <div className="space-y-2">
+                              <Label htmlFor="budget">Valor (R$)</Label>
+                              <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" placeholder="0,00" />
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
+                              <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" placeholder="0,00" />
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Package fields */}
+                    {projectType === 'package' && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="packageTotalValue">Valor Total (R$)</Label>
+                            <Input 
+                              id="packageTotalValue" 
+                              type="number" 
+                              step="0.01"
+                              value={packageTotalValue} 
+                              onChange={(e) => setPackageTotalValue(e.target.value)} 
+                              className="glass border-white/10" 
+                              placeholder="1500,00"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="packageTotalArts">Nº de Artes *</Label>
+                            <Input 
+                              id="packageTotalArts" 
+                              type="number" 
+                              min="1"
+                              value={packageTotalArts} 
+                              onChange={(e) => setPackageTotalArts(e.target.value)} 
+                              className="glass border-white/10" 
+                              placeholder="3"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Art names */}
+                        {artNames.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-primary">
+                              <Package className="h-4 w-4" />
+                              <Label className="text-primary text-sm">Nomes das Artes ({artNames.length})</Label>
+                            </div>
+                            <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                              {artNames.map((artName, index) => (
                                 <Input
-                                  id={`art-${index}`}
+                                  key={index}
                                   value={artName}
                                   onChange={(e) => {
                                     const newNames = [...artNames];
@@ -472,130 +545,141 @@ export default function Projects() {
                                     setArtNames(newNames);
                                   }}
                                   className="glass border-white/10"
-                                  placeholder={`Nome da Arte ${String(index + 1).padStart(2, '0')}`}
+                                  placeholder={`Arte ${String(index + 1).padStart(2, '0')}`}
                                 />
-                              </div>
-                            ))}
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              💡 Title Case automático
+                            </p>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            💡 Formatação automática em Title Case aplicada
-                          </p>
+                        )}
+
+                        {/* Optional project name */}
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Nome do Projeto (opcional)</Label>
+                          <Input 
+                            id="name" 
+                            value={name} 
+                            onChange={(e) => setName(toTitleCase(e.target.value))} 
+                            className="glass border-white/10" 
+                            placeholder="Auto: Pacote - Nome do Cliente"
+                          />
                         </div>
-                      )}
-
-                      {/* Optional project name for package */}
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="name">Nome do Projeto (opcional)</Label>
-                        <Input 
-                          id="name" 
-                          value={name} 
-                          onChange={(e) => setName(toTitleCase(e.target.value))} 
-                          className="glass border-white/10" 
-                          placeholder="Deixe vazio para gerar automaticamente..."
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Se vazio, será gerado como "Pacote - Nome do Cliente"
-                        </p>
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* Descrição */}
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="glass border-white/10" />
+                      </>
+                    )}
                   </div>
+                )}
 
-                  {/* Cliente */}
-                  <div className="space-y-2">
-                    <Label htmlFor="client">Cliente</Label>
-                    <Select value={clientId} onValueChange={setClientId}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        {clients.map(client => (
-                          <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Step 2: Dados Gerais */}
+                {formStep === 2 && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="space-y-2">
+                      <Label htmlFor="client">Cliente</Label>
+                      <Select value={clientId} onValueChange={setClientId}>
+                        <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent className="glass-card border-white/10">
+                          {clients.map(client => (
+                            <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  {/* Status */}
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        <SelectItem value="in_progress">Em andamento</SelectItem>
-                        <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                        <SelectItem value="paused">Pausado</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Descrição</Label>
+                      <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="glass border-white/10" placeholder="Descrição do projeto (opcional)" />
+                    </div>
 
-                  {/* Prioridade */}
-                  <div className="space-y-2">
-                    <Label htmlFor="priority">Prioridade</Label>
-                    <Select value={priority} onValueChange={setPriority}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        <SelectItem value="low">Baixa</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
-                        <SelectItem value="urgent">Urgente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Tipo de Cobrança - only for single */}
-                  {projectType === 'single' && (
-                    <>
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="billingType">Tipo de Cobrança</Label>
-                        <Select value={billingType} onValueChange={setBillingType}>
+                        <Label htmlFor="status">Status</Label>
+                        <Select value={status} onValueChange={setStatus}>
                           <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
                           <SelectContent className="glass-card border-white/10">
-                            <SelectItem value="fixed">Valor Fixo</SelectItem>
-                            <SelectItem value="hourly">Por Hora</SelectItem>
+                            <SelectItem value="in_progress">Em andamento</SelectItem>
+                            <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
+                            <SelectItem value="completed">Concluído</SelectItem>
+                            <SelectItem value="paused">Pausado</SelectItem>
+                            <SelectItem value="cancelled">Cancelado</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
-                      {/* Valor */}
-                      {billingType === 'fixed' ? (
-                        <div className="space-y-2">
-                          <Label htmlFor="budget">Valor do Projeto (R$)</Label>
-                          <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
-                          <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
-                        </div>
-                      )}
-                    </>
+                      <div className="space-y-2">
+                        <Label htmlFor="priority">Prioridade</Label>
+                        <Select value={priority} onValueChange={setPriority}>
+                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                          <SelectContent className="glass-card border-white/10">
+                            <SelectItem value="low">Baixa</SelectItem>
+                            <SelectItem value="medium">Média</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                            <SelectItem value="urgent">Urgente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Cronograma */}
+                {formStep === 3 && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate">Data de Início</Label>
+                        <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="glass border-white/10" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="deadline">Prazo</Label>
+                        <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="p-3 rounded-lg bg-muted/30 border border-white/5 space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Resumo</p>
+                      <div className="text-sm space-y-1">
+                        <p><span className="text-muted-foreground">Tipo:</span> {projectType === 'package' ? 'Pacote de Artes' : 'Projeto Avulso'}</p>
+                        <p><span className="text-muted-foreground">Nome:</span> {name || (projectType === 'package' ? 'Auto-gerado' : '-')}</p>
+                        {projectType === 'package' && packageTotalArts && (
+                          <p><span className="text-muted-foreground">Artes:</span> {packageTotalArts}</p>
+                        )}
+                        {clientId && (
+                          <p><span className="text-muted-foreground">Cliente:</span> {clients.find(c => c.id === clientId)?.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between pt-2 border-t border-white/10">
+                  {formStep > 1 ? (
+                    <Button type="button" variant="outline" onClick={() => setFormStep(s => s - 1)} className="glass border-white/10">
+                      ← Voltar
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
+                      Cancelar
+                    </Button>
                   )}
-
-                  {/* Data de Início */}
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Data de Início</Label>
-                    <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="glass border-white/10" />
-                  </div>
-
-                  {/* Prazo */}
-                  <div className="space-y-2">
-                    <Label htmlFor="deadline">Prazo</Label>
-                    <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="gradient-primary glow-primary">
-                    {editingProject ? 'Salvar' : 'Criar Projeto'}
-                  </Button>
+                  
+                  {formStep < 3 ? (
+                    <Button 
+                      type="button" 
+                      onClick={() => setFormStep(s => s + 1)} 
+                      disabled={!canProceedToNextStep()}
+                      className="gradient-primary glow-primary"
+                    >
+                      Próximo →
+                    </Button>
+                  ) : (
+                    <Button type="submit" className="gradient-primary glow-primary">
+                      {editingProject ? 'Salvar' : 'Criar Projeto'}
+                    </Button>
+                  )}
                 </div>
               </form>
             </DialogContent>
