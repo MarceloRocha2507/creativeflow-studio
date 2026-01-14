@@ -835,7 +835,7 @@ export default function Projects() {
             const ProjectCard = ({ project, index }: { project: Project; index: number }) => (
               <Card 
                 key={project.id} 
-                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
+                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-primary/20 hover:border-primary/40 hover:bg-card/80 cursor-pointer active:scale-[0.98]"
                 style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => openViewDialog(project)}
               >
