@@ -24,6 +24,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { supabase } from '@/integrations/supabase/client';
 
 // Menu principal reduzido
 const mainNavigation = [
@@ -64,6 +65,11 @@ export function MobileNav() {
     return settingsRoutes.includes(location.pathname);
   });
 
+  // Contadores para badges
+  const [projectsCount, setProjectsCount] = useState<number>(0);
+  const [tasksCount, setTasksCount] = useState<number>(0);
+  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
+
   // Auto-expandir submenu quando navegar para uma rota dentro dele
   useEffect(() => {
     if (projectRoutes.includes(location.pathname)) {
@@ -74,10 +80,36 @@ export function MobileNav() {
     }
   }, [location.pathname]);
 
+  // Buscar contagens do banco
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const { count: projCount } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['in_progress', 'pending_approval']);
+      
+      const { count: taskCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['todo', 'in_progress']);
+      
+      const { count: notifCount } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false);
+      
+      setProjectsCount(projCount || 0);
+      setTasksCount(taskCount || 0);
+      setUnreadNotifications(notifCount || 0);
+    };
+    
+    fetchCounts();
+  }, []);
+
   const isProjectsActive = projectRoutes.includes(location.pathname);
   const isSettingsActive = settingsRoutes.includes(location.pathname);
 
-  const renderNavItem = (item: typeof mainNavigation[0], isSubItem = false) => {
+  const renderNavItem = (item: typeof mainNavigation[0], isSubItem = false, index = 0, count?: number) => {
     const isActive = location.pathname === item.href;
     return (
       <Link
@@ -86,14 +118,23 @@ export function MobileNav() {
         onClick={() => setOpen(false)}
         className={cn(
           'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-          isSubItem && 'ml-4',
+          isSubItem && 'ml-4 animate-fade-in opacity-0',
           isActive
             ? 'bg-primary/10 text-primary'
             : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
         )}
+        style={isSubItem ? { 
+          animationDelay: `${index * 50}ms`,
+          animationFillMode: 'forwards'
+        } : undefined}
       >
         <item.icon className={cn('h-5 w-5', isActive && 'text-primary')} />
-        {item.name}
+        <span className="flex-1">{item.name}</span>
+        {count !== undefined && count > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary">
+            {count > 99 ? '99+' : count}
+          </span>
+        )}
       </Link>
     );
   };
@@ -102,7 +143,8 @@ export function MobileNav() {
     icon: React.ElementType,
     label: string,
     isOpen: boolean,
-    isActive: boolean
+    isActive: boolean,
+    count?: number
   ) => {
     const Icon = icon;
     return (
@@ -116,6 +158,11 @@ export function MobileNav() {
       >
         <Icon className={cn('h-5 w-5', isActive && 'text-primary')} />
         <span className="flex-1 text-left">{label}</span>
+        {count !== undefined && count > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary mr-2">
+            {count > 99 ? '99+' : count}
+          </span>
+        )}
         <ChevronDown className={cn(
           "h-4 w-4 transition-transform duration-200",
           isOpen && "rotate-180"
@@ -156,10 +203,13 @@ export function MobileNav() {
                 {/* Projetos - Collapsible */}
                 <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
                   <CollapsibleTrigger className="w-full p-0 text-left">
-                    {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive)}
+                    {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive, projectsCount)}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 overflow-hidden">
-                    {projectsNavigation.map((item) => renderNavItem(item, true))}
+                    {projectsNavigation.map((item, index) => {
+                      const itemCount = item.href === '/projects' ? projectsCount : item.href === '/tasks' ? tasksCount : undefined;
+                      return renderNavItem(item, true, index, itemCount);
+                    })}
                   </CollapsibleContent>
                 </Collapsible>
                 
@@ -172,10 +222,13 @@ export function MobileNav() {
                 {/* Configurações - Collapsible */}
                 <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
                   <CollapsibleTrigger className="w-full p-0 text-left">
-                    {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive)}
+                    {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive, unreadNotifications)}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 overflow-hidden">
-                    {settingsNavigation.map((item) => renderNavItem(item, true))}
+                    {settingsNavigation.map((item, index) => {
+                      const itemCount = item.href === '/notifications' ? unreadNotifications : undefined;
+                      return renderNavItem(item, true, index, itemCount);
+                    })}
                   </CollapsibleContent>
                 </Collapsible>
               </nav>

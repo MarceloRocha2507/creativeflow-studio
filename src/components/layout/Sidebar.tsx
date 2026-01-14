@@ -27,6 +27,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { supabase } from '@/integrations/supabase/client';
 
 const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
 
@@ -84,6 +85,11 @@ export function Sidebar() {
     return false;
   });
 
+  // Contadores para badges
+  const [projectsCount, setProjectsCount] = useState<number>(0);
+  const [tasksCount, setTasksCount] = useState<number>(0);
+  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
+
   // Auto-expandir submenu quando navegar para uma rota dentro dele
   useEffect(() => {
     if (projectRoutes.includes(location.pathname)) {
@@ -98,10 +104,39 @@ export function Sidebar() {
     localStorage.setItem(ADMIN_MENU_KEY, String(adminOpen));
   }, [adminOpen]);
 
+  // Buscar contagens do banco
+  useEffect(() => {
+    const fetchCounts = async () => {
+      // Projetos ativos
+      const { count: projCount } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['in_progress', 'pending_approval']);
+      
+      // Tarefas pendentes
+      const { count: taskCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['todo', 'in_progress']);
+      
+      // Notificações não lidas
+      const { count: notifCount } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false);
+      
+      setProjectsCount(projCount || 0);
+      setTasksCount(taskCount || 0);
+      setUnreadNotifications(notifCount || 0);
+    };
+    
+    fetchCounts();
+  }, []);
+
   const isProjectsActive = projectRoutes.includes(location.pathname);
   const isSettingsActive = settingsRoutes.includes(location.pathname);
 
-  const renderNavItem = (item: typeof mainNavigation[0], isSubItem = false) => {
+  const renderNavItem = (item: typeof mainNavigation[0], isSubItem = false, index = 0, count?: number) => {
     const isActive = location.pathname === item.href;
     return (
       <Link
@@ -109,11 +144,15 @@ export function Sidebar() {
         to={item.href}
         className={cn(
           'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
-          isSubItem && 'ml-4',
+          isSubItem && 'ml-4 animate-fade-in opacity-0',
           isActive
             ? 'bg-primary/10 text-primary active-indicator'
             : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
         )}
+        style={isSubItem ? { 
+          animationDelay: `${index * 50}ms`,
+          animationFillMode: 'forwards'
+        } : undefined}
       >
         <div className={cn(
           'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
@@ -126,12 +165,17 @@ export function Sidebar() {
             isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
           )} />
         </div>
-        <span className="relative">
+        <span className="relative flex-1">
           {item.name}
           {isActive && (
             <span className="absolute -bottom-1 left-0 h-[2px] w-full rounded-full bg-gradient-to-r from-primary to-accent opacity-50" />
           )}
         </span>
+        {count !== undefined && count > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary">
+            {count > 99 ? '99+' : count}
+          </span>
+        )}
       </Link>
     );
   };
@@ -140,7 +184,8 @@ export function Sidebar() {
     icon: React.ElementType,
     label: string,
     isOpen: boolean,
-    isActive: boolean
+    isActive: boolean,
+    count?: number
   ) => {
     const Icon = icon;
     return (
@@ -164,6 +209,11 @@ export function Sidebar() {
           )} />
         </div>
         <span className="flex-1 ml-3 text-left">{label}</span>
+        {count !== undefined && count > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary mr-2">
+            {count > 99 ? '99+' : count}
+          </span>
+        )}
         <ChevronDown className={cn(
           "h-4 w-4 shrink-0 transition-transform duration-200",
           isOpen && "rotate-180"
@@ -200,10 +250,13 @@ export function Sidebar() {
           {/* Projetos - Collapsible */}
           <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
             <CollapsibleTrigger className="w-full p-0 text-left">
-              {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive)}
+              {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive, projectsCount)}
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-              {projectsNavigation.map((item) => renderNavItem(item, true))}
+              {projectsNavigation.map((item, index) => {
+                const itemCount = item.href === '/projects' ? projectsCount : item.href === '/tasks' ? tasksCount : undefined;
+                return renderNavItem(item, true, index, itemCount);
+              })}
             </CollapsibleContent>
           </Collapsible>
           
@@ -216,10 +269,13 @@ export function Sidebar() {
           {/* Configurações - Collapsible */}
           <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
             <CollapsibleTrigger className="w-full p-0 text-left">
-              {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive)}
+              {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive, unreadNotifications)}
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-              {settingsNavigation.map((item) => renderNavItem(item, true))}
+              {settingsNavigation.map((item, index) => {
+                const itemCount = item.href === '/notifications' ? unreadNotifications : undefined;
+                return renderNavItem(item, true, index, itemCount);
+              })}
             </CollapsibleContent>
           </Collapsible>
 
@@ -234,7 +290,7 @@ export function Sidebar() {
                 )} />
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                {adminNavigation.map((item) => renderNavItem(item))}
+                {adminNavigation.map((item, index) => renderNavItem(item, false, index))}
               </CollapsibleContent>
             </Collapsible>
           )}
