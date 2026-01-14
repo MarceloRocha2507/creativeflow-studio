@@ -433,12 +433,8 @@ export default function Clients() {
                 {/* Section 3: Contato */}
                 <FormSection icon={<Phone className="h-4 w-4" />} title="CONTATO">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone Principal</Label>
+                    <Label htmlFor="phone">WhatsApp</Label>
                     <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="glass border-white/10" placeholder="(00) 00000-0000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryPhone">Telefone Secundário</Label>
-                    <Input id="secondaryPhone" value={secondaryPhone} onChange={(e) => setSecondaryPhone(e.target.value)} className="glass border-white/10" placeholder="(00) 00000-0000" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
@@ -457,37 +453,9 @@ export default function Clients() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="address">Endereço</Label>
-                    <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} className="glass border-white/10" placeholder="Endereço completo" />
-                  </div>
                 </FormSection>
 
-                {/* Section 4: Origem e Marketing */}
-                <FormSection icon={<Tag className="h-4 w-4" />} title="ORIGEM E MARKETING">
-                  <div className="space-y-2">
-                    <Label htmlFor="campaignSource">Campanha/Indicação</Label>
-                    <Input id="campaignSource" value={campaignSource} onChange={(e) => setCampaignSource(e.target.value)} className="glass border-white/10" placeholder="Ex: Black Friday 2024, João Silva..." />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="firstContactDate">Data do Primeiro Contato</Label>
-                    <Input id="firstContactDate" type="date" value={firstContactDate} onChange={(e) => setFirstContactDate(e.target.value)} className="glass border-white/10" />
-                  </div>
-                </FormSection>
-
-                {/* Section 5: Atendimento e Vendas */}
-                <FormSection icon={<Target className="h-4 w-4" />} title="ATENDIMENTO E VENDAS">
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="mainInterest">Interesse/Necessidade Principal</Label>
-                    <Textarea id="mainInterest" value={mainInterest} onChange={(e) => setMainInterest(e.target.value)} rows={2} className="glass border-white/10" placeholder="O que o cliente busca ou precisa..." />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="productServiceInterest">Produto/Serviço de Interesse</Label>
-                    <Input id="productServiceInterest" value={productServiceInterest} onChange={(e) => setProductServiceInterest(e.target.value)} className="glass border-white/10" placeholder="Produtos ou serviços específicos" />
-                  </div>
-                </FormSection>
-
-                {/* Section 6: Controle */}
+                {/* Section 4: Controle */}
                 <FormSection icon={<Calendar className="h-4 w-4" />} title="CONTROLE">
                   <div className="space-y-2">
                     <Label htmlFor="nextFollowupDate">Próximo Follow-up</Label>
