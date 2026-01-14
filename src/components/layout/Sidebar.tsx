@@ -146,14 +146,14 @@ export function Sidebar() {
     return (
       <div
         className={cn(
-          'group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 cursor-pointer',
+          'group relative flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 cursor-pointer',
           isActive
             ? 'bg-primary/10 text-primary'
             : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
         )}
       >
         <div className={cn(
-          'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300',
           isActive 
             ? 'bg-primary/20 icon-glow' 
             : 'bg-secondary/50 group-hover:bg-secondary'
@@ -163,9 +163,9 @@ export function Sidebar() {
             isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
           )} />
         </div>
-        <span className="flex-1">{label}</span>
+        <span className="flex-1 ml-3">{label}</span>
         <ChevronDown className={cn(
-          "h-4 w-4 transition-transform duration-200",
+          "h-4 w-4 shrink-0 transition-transform duration-200",
           isOpen && "rotate-180"
         )} />
       </div>
