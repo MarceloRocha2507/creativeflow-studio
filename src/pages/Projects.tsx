@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator, Image, CheckCircle2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -20,6 +20,14 @@ import { ptBR } from 'date-fns/locale';
 interface Client {
   id: string;
   name: string;
+}
+
+interface ProjectArt {
+  id: string;
+  project_id: string;
+  name: string;
+  order_index: number;
+  status: string;
 }
 
 interface Project {
@@ -39,6 +47,7 @@ interface Project {
   google_drive_link: string | null;
   created_at: string;
   clients?: { name: string } | null;
+  project_arts?: ProjectArt[];
 }
 
 interface ClientGroup {
@@ -46,6 +55,14 @@ interface ClientGroup {
   clientName: string;
   projects: Project[];
 }
+
+// Função para gerar nomes de artes automaticamente
+const generateArtNames = (projectName: string, totalArts: number): string[] => {
+  return Array.from({ length: totalArts }, (_, index) => {
+    const artNumber = String(index + 1).padStart(2, '0');
+    return `${projectName} - Arte ${artNumber}`;
+  });
+};
 
 // Agrupa projetos por cliente - apenas clientes com 2+ projetos são agrupados
 const groupProjectsByClient = (projects: Project[]): { clientGroups: ClientGroup[]; standalone: Project[] } => {
@@ -133,15 +150,31 @@ export default function Projects() {
   const fetchData = async () => {
     if (!user) return;
     
-    const [projectsRes, clientsRes] = await Promise.all([
+    const [projectsRes, clientsRes, artsRes] = await Promise.all([
       supabase.from('projects').select('*, clients(name)').order('created_at', { ascending: false }),
       supabase.from('clients').select('id, name').eq('status', 'active'),
+      supabase.from('project_arts').select('*').order('order_index', { ascending: true }),
     ]);
 
     if (projectsRes.error) {
       toast({ variant: 'destructive', title: 'Erro ao carregar projetos', description: projectsRes.error.message });
     } else {
-      setProjects(projectsRes.data || []);
+      // Agrupar artes por projeto
+      const artsByProject: Record<string, ProjectArt[]> = {};
+      (artsRes.data || []).forEach((art: ProjectArt) => {
+        if (!artsByProject[art.project_id]) {
+          artsByProject[art.project_id] = [];
+        }
+        artsByProject[art.project_id].push(art);
+      });
+
+      // Adicionar artes aos projetos
+      const projectsWithArts = (projectsRes.data || []).map(project => ({
+        ...project,
+        project_arts: artsByProject[project.id] || [],
+      }));
+
+      setProjects(projectsWithArts);
     }
 
     if (!clientsRes.error) {
@@ -193,6 +226,17 @@ export default function Projects() {
     setIsDialogOpen(true);
   };
 
+  // Preview das artes geradas
+  const generatedArtNames = useMemo(() => {
+    if (projectType === 'package' && name && packageTotalArts) {
+      const total = parseInt(packageTotalArts);
+      if (total > 0 && total <= 100) {
+        return generateArtNames(name, total);
+      }
+    }
+    return [];
+  }, [projectType, name, packageTotalArts]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -219,22 +263,74 @@ export default function Projects() {
       const { error } = await supabase.from('projects').update(projectData).eq('id', editingProject.id);
       if (error) {
         toast({ variant: 'destructive', title: 'Erro ao atualizar projeto', description: error.message });
-      } else {
-        toast({ title: 'Projeto atualizado com sucesso!' });
-        fetchData();
-        setIsDialogOpen(false);
-        resetForm();
+        return;
       }
+      
+      // Atualizar artes se o número mudou para pacotes
+      if (projectType === 'package' && packageTotalArts) {
+        const newTotal = parseInt(packageTotalArts);
+        const currentArts = editingProject.project_arts || [];
+        const currentTotal = currentArts.length;
+
+        if (newTotal > currentTotal) {
+          // Adicionar novas artes
+          const newArts = Array.from({ length: newTotal - currentTotal }, (_, index) => ({
+            project_id: editingProject.id,
+            user_id: user.id,
+            name: `${name} - Arte ${String(currentTotal + index + 1).padStart(2, '0')}`,
+            order_index: currentTotal + index + 1,
+            status: 'pending',
+          }));
+          await supabase.from('project_arts').insert(newArts);
+        } else if (newTotal < currentTotal) {
+          // Remover artes excedentes (do final)
+          const artsToDelete = currentArts
+            .sort((a, b) => b.order_index - a.order_index)
+            .slice(0, currentTotal - newTotal)
+            .map(art => art.id);
+          await supabase.from('project_arts').delete().in('id', artsToDelete);
+        }
+      }
+
+      toast({ title: 'Projeto atualizado com sucesso!' });
+      fetchData();
+      setIsDialogOpen(false);
+      resetForm();
     } else {
-      const { error } = await supabase.from('projects').insert([projectData]);
+      const { data: newProject, error } = await supabase
+        .from('projects')
+        .insert([projectData])
+        .select()
+        .single();
+
       if (error) {
         toast({ variant: 'destructive', title: 'Erro ao criar projeto', description: error.message });
-      } else {
-        toast({ title: 'Projeto criado com sucesso!' });
-        fetchData();
-        setIsDialogOpen(false);
-        resetForm();
+        return;
       }
+
+      // Criar artes automaticamente para pacotes
+      if (projectType === 'package' && packageTotalArts && newProject) {
+        const totalArts = parseInt(packageTotalArts);
+        const artNames = generateArtNames(name, totalArts);
+        
+        const artsToInsert = artNames.map((artName, index) => ({
+          project_id: newProject.id,
+          user_id: user.id,
+          name: artName,
+          order_index: index + 1,
+          status: 'pending',
+        }));
+
+        const { error: artsError } = await supabase.from('project_arts').insert(artsToInsert);
+        if (artsError) {
+          console.error('Erro ao criar artes:', artsError);
+        }
+      }
+
+      toast({ title: 'Projeto criado com sucesso!' });
+      fetchData();
+      setIsDialogOpen(false);
+      resetForm();
     }
   };
 
@@ -482,6 +578,32 @@ export default function Projects() {
                         </div>
                         <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
                       </div>
+
+                      {/* Preview das artes geradas */}
+                      {generatedArtNames.length > 0 && (
+                        <div className="sm:col-span-2 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Image className="h-4 w-4 text-primary" />
+                            <Label className="text-primary font-medium">Preview das Artes ({generatedArtNames.length})</Label>
+                          </div>
+                          <div className="p-3 rounded-lg glass border border-white/10 max-h-40 overflow-y-auto space-y-1">
+                            {generatedArtNames.slice(0, 10).map((artName, index) => (
+                              <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground py-1">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400/50" />
+                                <span className="truncate">{artName}</span>
+                              </div>
+                            ))}
+                            {generatedArtNames.length > 10 && (
+                              <div className="text-xs text-muted-foreground/70 pt-1 border-t border-white/5">
+                                ... e mais {generatedArtNames.length - 10} artes
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            💡 As artes serão criadas automaticamente ao salvar
+                          </p>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -599,6 +721,29 @@ export default function Projects() {
                       </Button>
                     )}
                   </div>
+
+                  {/* Progresso de artes para pacotes */}
+                  {project.package_total_arts && project.project_arts && (
+                    (() => {
+                      const totalArts = project.package_total_arts;
+                      const completedArts = project.project_arts.filter(art => art.status === 'completed').length;
+                      const progressPercent = (completedArts / totalArts) * 100;
+                      
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Image className="h-3 w-3" />
+                              {completedArts}/{totalArts} artes
+                            </span>
+                            <span className="text-primary font-medium">{Math.round(progressPercent)}%</span>
+                          </div>
+                          <Progress value={progressPercent} className="h-1.5" />
+                        </div>
+                      );
+                    })()
+                  )}
+
                   <div className="flex items-center justify-between text-sm">
                     {project.deadline && (
                       <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -610,6 +755,12 @@ export default function Projects() {
                       <div className="flex items-center gap-1.5 text-emerald-400">
                         <DollarSign className="h-4 w-4" />
                         R$ {project.budget || project.hourly_rate}/h
+                      </div>
+                    )}
+                    {project.package_total_value && (
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <DollarSign className="h-4 w-4" />
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(project.package_total_value)}
                       </div>
                     )}
                   </div>
