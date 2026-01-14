@@ -8,15 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator, Image, Settings } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArtManagementModal, ART_TYPES } from '@/components/projects/ArtManagementModal';
 
 // Função para formatar texto em Title Case
 const toTitleCase = (text: string): string => {
@@ -32,15 +30,6 @@ interface Client {
   name: string;
 }
 
-interface ProjectArt {
-  id: string;
-  project_id: string;
-  name: string;
-  order_index: number;
-  status: string;
-  art_type: string;
-}
-
 interface Project {
   id: string;
   name: string;
@@ -53,12 +42,8 @@ interface Project {
   start_date: string | null;
   deadline: string | null;
   client_id: string | null;
-  package_total_value: number | null;
-  package_total_arts: number | null;
-  google_drive_link: string | null;
   created_at: string;
   clients?: { name: string } | null;
-  project_arts?: ProjectArt[];
 }
 
 interface ClientGroup {
@@ -127,58 +112,6 @@ export default function Projects() {
   const [hourlyRate, setHourlyRate] = useState('');
   const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
-  
-  // Project type state
-  const [projectType, setProjectType] = useState<'single' | 'package'>('single');
-  
-  // Package form state
-  const [packageTotalValue, setPackageTotalValue] = useState('');
-  const [packageTotalArts, setPackageTotalArts] = useState('');
-  const [googleDriveLink, setGoogleDriveLink] = useState('');
-  const [defaultArtType, setDefaultArtType] = useState('feed');
-  
-  // Art management modal state
-  const [isArtModalOpen, setIsArtModalOpen] = useState(false);
-  const [selectedProjectForArts, setSelectedProjectForArts] = useState<Project | null>(null);
-  
-  // Nomes individuais das artes
-  const [artNames, setArtNames] = useState<string[]>([]);
-  
-  // Condição para mostrar campos de nomeação no pacote
-  const showNamingFields = projectType === 'package' 
-    ? parseInt(packageTotalArts) > 0 
-    : true;
-
-  // Atualizar campos de arte quando número de artes mudar
-  useEffect(() => {
-    if (projectType === 'package') {
-      const total = parseInt(packageTotalArts) || 0;
-      
-      setArtNames(prev => {
-        if (total > prev.length) {
-          // Adicionar novos campos
-          const newNames = [...prev];
-          for (let i = prev.length; i < total; i++) {
-            newNames.push('');
-          }
-          return newNames;
-        } else {
-          // Remover campos excedentes
-          return prev.slice(0, total);
-        }
-      });
-    }
-  }, [packageTotalArts, projectType]);
-  
-  // Calculated unit value
-  const calculatedUnitValue = (() => {
-    const total = parseFloat(packageTotalValue);
-    const arts = parseInt(packageTotalArts);
-    if (total > 0 && arts > 0) {
-      return total / arts;
-    }
-    return 0;
-  })();
 
   useEffect(() => {
     fetchData();
@@ -187,31 +120,15 @@ export default function Projects() {
   const fetchData = async () => {
     if (!user) return;
     
-    const [projectsRes, clientsRes, artsRes] = await Promise.all([
+    const [projectsRes, clientsRes] = await Promise.all([
       supabase.from('projects').select('*, clients(name)').order('created_at', { ascending: false }),
       supabase.from('clients').select('id, name').eq('status', 'active'),
-      supabase.from('project_arts').select('*').order('order_index', { ascending: true }),
     ]);
 
     if (projectsRes.error) {
       toast({ variant: 'destructive', title: 'Erro ao carregar projetos', description: projectsRes.error.message });
     } else {
-      // Agrupar artes por projeto
-      const artsByProject: Record<string, ProjectArt[]> = {};
-      (artsRes.data || []).forEach((art: ProjectArt) => {
-        if (!artsByProject[art.project_id]) {
-          artsByProject[art.project_id] = [];
-        }
-        artsByProject[art.project_id].push(art);
-      });
-
-      // Adicionar artes aos projetos
-      const projectsWithArts = (projectsRes.data || []).map(project => ({
-        ...project,
-        project_arts: artsByProject[project.id] || [],
-      }));
-
-      setProjects(projectsWithArts);
+      setProjects(projectsRes.data || []);
     }
 
     if (!clientsRes.error) {
@@ -232,13 +149,7 @@ export default function Projects() {
     setHourlyRate('');
     setStartDate('');
     setDeadline('');
-    setPackageTotalValue('');
-    setPackageTotalArts('');
-    setGoogleDriveLink('');
-    setDefaultArtType('feed');
-    setProjectType('single');
     setEditingProject(null);
-    setArtNames([]);
   };
 
   const openEditDialog = (project: Project) => {
@@ -253,18 +164,8 @@ export default function Projects() {
     setHourlyRate(project.hourly_rate?.toString() || '');
     setStartDate(project.start_date || '');
     setDeadline(project.deadline || '');
-    setPackageTotalValue(project.package_total_value?.toString() || '');
-    setPackageTotalArts(project.package_total_arts?.toString() || '');
-    setGoogleDriveLink(project.google_drive_link || '');
-    // Detectar tipo baseado nos dados existentes
-    if (project.package_total_value || project.package_total_arts) {
-      setProjectType('package');
-    } else {
-      setProjectType('single');
-    }
     setIsDialogOpen(true);
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,19 +174,16 @@ export default function Projects() {
     const projectData = {
       user_id: user.id,
       name,
-      description: projectType === 'single' ? (description || null) : null,
+      description: description || null,
       client_id: clientId || null,
       status,
       priority,
-      project_type: projectType,
-      billing_type: projectType === 'single' ? billingType : 'fixed',
-      budget: projectType === 'single' && budget ? parseFloat(budget) : null,
-      hourly_rate: projectType === 'single' && hourlyRate ? parseFloat(hourlyRate) : null,
-      start_date: projectType === 'single' && startDate ? startDate : null,
-      deadline: projectType === 'single' && deadline ? deadline : null,
-      package_total_value: projectType === 'package' && packageTotalValue ? parseFloat(packageTotalValue) : null,
-      package_total_arts: projectType === 'package' && packageTotalArts ? parseInt(packageTotalArts) : null,
-      google_drive_link: projectType === 'package' && googleDriveLink.trim() ? googleDriveLink.trim() : null,
+      project_type: 'single',
+      billing_type: billingType,
+      budget: budget ? parseFloat(budget) : null,
+      hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+      start_date: startDate || null,
+      deadline: deadline || null,
     };
 
     if (editingProject) {
@@ -294,69 +192,19 @@ export default function Projects() {
         toast({ variant: 'destructive', title: 'Erro ao atualizar projeto', description: error.message });
         return;
       }
-      
-      // Atualizar artes se o número mudou para pacotes
-      if (projectType === 'package' && packageTotalArts) {
-        const newTotal = parseInt(packageTotalArts);
-        const currentArts = editingProject.project_arts || [];
-        const currentTotal = currentArts.length;
-
-        if (newTotal > currentTotal) {
-          // Adicionar novas artes com o novo padrão
-          const newArts = Array.from({ length: newTotal - currentTotal }, (_, index) => {
-            const artNumber = String(currentTotal + index + 1).padStart(2, '0');
-            const typeLabel = ART_TYPES.find(t => t.value === defaultArtType)?.label || 'Feed';
-            return {
-              project_id: editingProject.id,
-              user_id: user.id,
-              name: `${name} - ${typeLabel} - Arte ${artNumber}`,
-              order_index: currentTotal + index + 1,
-              status: 'pending',
-              art_type: defaultArtType,
-            };
-          });
-          await supabase.from('project_arts').insert(newArts);
-        } else if (newTotal < currentTotal) {
-          // Remover artes excedentes (do final)
-          const artsToDelete = currentArts
-            .sort((a, b) => b.order_index - a.order_index)
-            .slice(0, currentTotal - newTotal)
-            .map(art => art.id);
-          await supabase.from('project_arts').delete().in('id', artsToDelete);
-        }
-      }
 
       toast({ title: 'Projeto atualizado com sucesso!' });
       fetchData();
       setIsDialogOpen(false);
       resetForm();
     } else {
-      const { data: newProject, error } = await supabase
+      const { error } = await supabase
         .from('projects')
-        .insert([projectData])
-        .select()
-        .single();
+        .insert([projectData]);
 
       if (error) {
         toast({ variant: 'destructive', title: 'Erro ao criar projeto', description: error.message });
         return;
-      }
-
-      // Criar artes com nomes customizados
-      if (projectType === 'package' && packageTotalArts && newProject) {
-        const artsToInsert = artNames.map((artName, index) => ({
-          project_id: newProject.id,
-          user_id: user.id,
-          name: artName || `Arte ${String(index + 1).padStart(2, '0')}`,
-          order_index: index + 1,
-          status: 'pending',
-          art_type: defaultArtType,
-        }));
-
-        const { error: artsError } = await supabase.from('project_arts').insert(artsToInsert);
-        if (artsError) {
-          console.error('Erro ao criar artes:', artsError);
-        }
       }
 
       toast({ title: 'Projeto criado com sucesso!' });
@@ -427,266 +275,103 @@ export default function Projects() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Seletor de Tipo de Projeto - PRIMEIRO CAMPO */}
-                  <div className="sm:col-span-2 space-y-2">
-                    <Label>Tipo de Projeto *</Label>
-                    <div className="flex gap-2">
-                      <Button 
-                        type="button" 
-                        variant={projectType === 'single' ? 'default' : 'outline'}
-                        onClick={() => setProjectType('single')}
-                        className={projectType === 'single' ? 'gradient-primary flex-1' : 'glass border-white/10 flex-1'}
-                      >
-                        <FolderKanban className="h-4 w-4 mr-2" />
-                        Projeto Avulso
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant={projectType === 'package' ? 'default' : 'outline'}
-                        onClick={() => setProjectType('package')}
-                        className={projectType === 'package' ? 'gradient-primary flex-1' : 'glass border-white/10 flex-1'}
-                      >
-                        <Package className="h-4 w-4 mr-2" />
-                        Pacote de Artes
-                      </Button>
-                    </div>
+                  {/* Nome do Projeto */}
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="name">Nome do Projeto *</Label>
+                    <Input 
+                      id="name" 
+                      value={name} 
+                      onChange={(e) => setName(toTitleCase(e.target.value))} 
+                      required 
+                      className="glass border-white/10" 
+                      placeholder="Digite o nome..."
+                    />
+                  </div>
+                  
+                  {/* Descrição */}
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="description">Descrição</Label>
+                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="glass border-white/10" />
                   </div>
 
-                  {/* Nome do Projeto - condicional para pacote */}
-                  {(projectType === 'single' || showNamingFields) && (
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="name">Nome do Projeto *</Label>
-                      <Input 
-                        id="name" 
-                        value={name} 
-                        onChange={(e) => setName(toTitleCase(e.target.value))} 
-                        required 
-                        className="glass border-white/10" 
-                        placeholder="Digite o nome..."
-                      />
+                  {/* Cliente */}
+                  <div className="space-y-2">
+                    <Label htmlFor="client">Cliente</Label>
+                    <Select value={clientId} onValueChange={setClientId}>
+                      <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
+                        {clients.map(client => (
+                          <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
+                        <SelectItem value="in_progress">Em andamento</SelectItem>
+                        <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
+                        <SelectItem value="completed">Concluído</SelectItem>
+                        <SelectItem value="paused">Pausado</SelectItem>
+                        <SelectItem value="cancelled">Cancelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Prioridade */}
+                  <div className="space-y-2">
+                    <Label htmlFor="priority">Prioridade</Label>
+                    <Select value={priority} onValueChange={setPriority}>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="medium">Média</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
+                        <SelectItem value="urgent">Urgente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Tipo de Cobrança */}
+                  <div className="space-y-2">
+                    <Label htmlFor="billingType">Tipo de Cobrança</Label>
+                    <Select value={billingType} onValueChange={setBillingType}>
+                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="glass-card border-white/10">
+                        <SelectItem value="fixed">Valor Fixo</SelectItem>
+                        <SelectItem value="hourly">Por Hora</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Valor */}
+                  {billingType === 'fixed' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="budget">Valor do Projeto (R$)</Label>
+                      <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
+                      <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
                     </div>
                   )}
-                  
-                  {/* Descrição - apenas Projeto Avulso */}
-                  {projectType === 'single' && (
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="description">Descrição</Label>
-                      <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="glass border-white/10" />
-                    </div>
-                  )}
 
-                  {/* Cliente, Status, Prioridade - condicionais para pacote */}
-                  {(projectType === 'single' || showNamingFields) && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="client">Cliente</Label>
-                        <Select value={clientId} onValueChange={setClientId}>
-                          <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                          <SelectContent className="glass-card border-white/10">
-                            {clients.map(client => (
-                              <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  {/* Data de Início */}
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Data de Início</Label>
+                    <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="glass border-white/10" />
+                  </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="status">Status</Label>
-                        <Select value={status} onValueChange={setStatus}>
-                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                          <SelectContent className="glass-card border-white/10">
-                            <SelectItem value="in_progress">Em andamento</SelectItem>
-                            <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
-                            <SelectItem value="completed">Concluído</SelectItem>
-                            <SelectItem value="paused">Pausado</SelectItem>
-                            <SelectItem value="cancelled">Cancelado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="priority">Prioridade</Label>
-                        <Select value={priority} onValueChange={setPriority}>
-                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                          <SelectContent className="glass-card border-white/10">
-                            <SelectItem value="low">Baixa</SelectItem>
-                            <SelectItem value="medium">Média</SelectItem>
-                            <SelectItem value="high">Alta</SelectItem>
-                            <SelectItem value="urgent">Urgente</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Campos específicos - Projeto Avulso */}
-                  {projectType === 'single' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="billingType">Tipo de Cobrança</Label>
-                        <Select value={billingType} onValueChange={setBillingType}>
-                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                          <SelectContent className="glass-card border-white/10">
-                            <SelectItem value="fixed">Valor Fixo</SelectItem>
-                            <SelectItem value="hourly">Por Hora</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {billingType === 'fixed' ? (
-                        <div className="space-y-2">
-                          <Label htmlFor="budget">Valor do Projeto (R$)</Label>
-                          <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
-                          <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
-                        </div>
-                      )}
-                      <div className="space-y-2">
-                        <Label htmlFor="startDate">Data de Início</Label>
-                        <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="glass border-white/10" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="deadline">Prazo</Label>
-                        <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Campos específicos - Pacote de Artes */}
-                  {projectType === 'package' && (
-                    <>
-                      {/* Campos iniciais - sempre visíveis */}
-                      <div className="space-y-2">
-                        <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$) *</Label>
-                        <Input 
-                          id="packageTotalValue" 
-                          type="number" 
-                          step="0.01"
-                          min="0"
-                          value={packageTotalValue} 
-                          onChange={(e) => setPackageTotalValue(e.target.value)} 
-                          className="glass border-white/10" 
-                          placeholder="0,00"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="packageTotalArts">Número Total de Artes *</Label>
-                        <Input 
-                          id="packageTotalArts" 
-                          type="number" 
-                          min="1"
-                          value={packageTotalArts} 
-                          onChange={(e) => setPackageTotalArts(e.target.value)} 
-                          className="glass border-white/10" 
-                          placeholder="0"
-                          required
-                        />
-                      </div>
-
-                      {/* Mensagem guia quando número de artes não foi preenchido */}
-                      {!showNamingFields && (
-                        <div className="sm:col-span-2 p-4 rounded-lg glass border border-white/10 text-center">
-                          <p className="text-sm text-muted-foreground">
-                            💡 Informe o número de artes para continuar
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Campos que aparecem após preencher número de artes */}
-                      {showNamingFields && (
-                        <>
-                          <div className="space-y-2 sm:col-span-2">
-                            <Label htmlFor="defaultArtType">Tipo de Arte Padrão</Label>
-                            <Select value={defaultArtType} onValueChange={setDefaultArtType}>
-                              <SelectTrigger className="glass border-white/10">
-                                <SelectValue placeholder="Selecione o tipo..." />
-                              </SelectTrigger>
-                              <SelectContent className="glass-card border-white/10">
-                                {ART_TYPES.map(type => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">O tipo pode ser alterado individualmente após criar</p>
-                          </div>
-                          
-                          {calculatedUnitValue > 0 && (
-                            <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
-                              <div className="flex items-center gap-2 text-primary">
-                                <Calculator className="h-4 w-4" />
-                                <span className="text-sm font-medium">Valor por Arte:</span>
-                                <span className="text-lg font-bold">
-                                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculatedUnitValue)}
-                                </span>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
-                            </div>
-                          )}
-                          
-                          <div className="space-y-2 sm:col-span-2">
-                            <Label htmlFor="googleDriveLink">Link do Google Drive</Label>
-                            <div className="flex gap-2">
-                              <Input 
-                                id="googleDriveLink" 
-                                type="url"
-                                value={googleDriveLink} 
-                                onChange={(e) => setGoogleDriveLink(e.target.value)} 
-                                className="glass border-white/10 flex-1" 
-                                placeholder="https://drive.google.com/..." 
-                              />
-                              {googleDriveLink && (
-                                <Button 
-                                  type="button" 
-                                  variant="outline" 
-                                  size="icon"
-                                  className="glass border-white/10 shrink-0"
-                                  onClick={() => window.open(googleDriveLink, '_blank')}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
-                          </div>
-
-                          {/* Campos individuais para nome de cada arte */}
-                          <div className="sm:col-span-2 space-y-3">
-                            <Label className="flex items-center gap-2">
-                              <Package className="h-4 w-4" />
-                              Nomes das Artes ({packageTotalArts})
-                            </Label>
-                            <div className="space-y-2 max-h-60 overflow-y-auto p-3 glass rounded-lg border border-white/10">
-                              {artNames.map((artName, index) => (
-                                <div key={index} className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">
-                                    Arte {String(index + 1).padStart(2, '0')}
-                                  </Label>
-                                  <Input
-                                    value={artName}
-                                    onChange={(e) => {
-                                      const newNames = [...artNames];
-                                      newNames[index] = toTitleCase(e.target.value);
-                                      setArtNames(newNames);
-                                    }}
-                                    className="glass border-white/10"
-                                    placeholder={`Nome da Arte ${index + 1}`}
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              💡 Digite os nomes individualmente. Formatação automática em Title Case.
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  )}
+                  {/* Prazo */}
+                  <div className="space-y-2">
+                    <Label htmlFor="deadline">Prazo</Label>
+                    <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
@@ -781,57 +466,7 @@ export default function Projects() {
                     <Badge variant="outline" className={statusColors[project.status]}>
                       {statusLabels[project.status]}
                     </Badge>
-                    {project.package_total_value && project.package_total_arts && (
-                      <Badge 
-                        variant="outline" 
-                        className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 cursor-pointer hover:bg-emerald-500/20 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProjectForArts(project);
-                          setIsArtModalOpen(true);
-                        }}
-                      >
-                        <Settings className="h-3 w-3 mr-1" />
-                        Gerenciar Artes
-                      </Badge>
-                    )}
-                    {project.google_drive_link && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-xs text-primary hover:text-primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(project.google_drive_link!, '_blank');
-                        }}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Drive
-                      </Button>
-                    )}
                   </div>
-
-                  {/* Progresso de artes para pacotes */}
-                  {project.package_total_arts && project.project_arts && (
-                    (() => {
-                      const totalArts = project.package_total_arts;
-                      const completedArts = project.project_arts.filter(art => art.status === 'completed').length;
-                      const progressPercent = (completedArts / totalArts) * 100;
-                      
-                      return (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                              <Image className="h-3 w-3" />
-                              {completedArts}/{totalArts} artes
-                            </span>
-                            <span className="text-primary font-medium">{Math.round(progressPercent)}%</span>
-                          </div>
-                          <Progress value={progressPercent} className="h-1.5" />
-                        </div>
-                      );
-                    })()
-                  )}
 
                   <div className="flex items-center justify-between text-sm">
                     {project.deadline && (
@@ -844,12 +479,6 @@ export default function Projects() {
                       <div className="flex items-center gap-1.5 text-emerald-400">
                         <DollarSign className="h-4 w-4" />
                         R$ {project.budget || project.hourly_rate}/h
-                      </div>
-                    )}
-                    {project.package_total_value && (
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <DollarSign className="h-4 w-4" />
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(project.package_total_value)}
                       </div>
                     )}
                   </div>
@@ -902,14 +531,6 @@ export default function Projects() {
           })()
         )}
       </div>
-
-      {/* Modal de Gerenciamento de Artes */}
-      <ArtManagementModal
-        project={selectedProjectForArts}
-        open={isArtModalOpen}
-        onOpenChange={setIsArtModalOpen}
-        onUpdate={fetchData}
-      />
     </AppLayout>
   );
 }
