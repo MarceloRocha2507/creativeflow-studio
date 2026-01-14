@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,6 +37,50 @@ interface Project {
   created_at: string;
   clients?: { name: string } | null;
 }
+
+interface ClientGroup {
+  clientId: string;
+  clientName: string;
+  projects: Project[];
+}
+
+// Agrupa projetos por cliente - apenas clientes com 2+ projetos são agrupados
+const groupProjectsByClient = (projects: Project[]): { clientGroups: ClientGroup[]; standalone: Project[] } => {
+  const groups: Record<string, Project[]> = {};
+  const standalone: Project[] = [];
+
+  // Agrupar por client_id
+  projects.forEach(project => {
+    if (project.client_id) {
+      if (!groups[project.client_id]) {
+        groups[project.client_id] = [];
+      }
+      groups[project.client_id].push(project);
+    } else {
+      standalone.push(project);
+    }
+  });
+
+  // Separar grupos com 2+ projetos dos individuais
+  const clientGroups: ClientGroup[] = [];
+
+  Object.entries(groups).forEach(([clientId, clientProjects]) => {
+    if (clientProjects.length >= 2) {
+      clientGroups.push({
+        clientId,
+        clientName: clientProjects[0].clients?.name || 'Cliente',
+        projects: clientProjects,
+      });
+    } else {
+      standalone.push(...clientProjects);
+    }
+  });
+
+  // Ordenar grupos por nome do cliente
+  clientGroups.sort((a, b) => a.clientName.localeCompare(b.clientName));
+
+  return { clientGroups, standalone };
+};
 
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -342,8 +386,10 @@ export default function Projects() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project, index) => (
+          (() => {
+            const { clientGroups, standalone } = groupProjectsByClient(filteredProjects);
+
+            const ProjectCard = ({ project, index }: { project: Project; index: number }) => (
               <Card 
                 key={project.id} 
                 className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10"
@@ -399,8 +445,51 @@ export default function Projects() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            );
+
+            return (
+              <div className="space-y-6">
+                {/* Grupos de Clientes */}
+                {clientGroups.map((group) => (
+                  <div key={group.clientId} className="space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Users className="h-4 w-4" />
+                        <span className="font-medium">{group.clientName}</span>
+                      </div>
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                        {group.projects.length} projetos
+                      </Badge>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pl-0 sm:pl-2 border-l-0 sm:border-l-2 border-primary/30">
+                      {group.projects.map((project, index) => (
+                        <ProjectCard key={project.id} project={project} index={index} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Projetos Individuais */}
+                {standalone.length > 0 && (
+                  <>
+                    {clientGroups.length > 0 && (
+                      <div className="flex items-center gap-2 px-1 pt-2">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <FolderKanban className="h-4 w-4" />
+                          <span className="font-medium">Projetos Individuais</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {standalone.map((project, index) => (
+                        <ProjectCard key={project.id} project={project} index={index} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()
         )}
       </div>
     </AppLayout>
