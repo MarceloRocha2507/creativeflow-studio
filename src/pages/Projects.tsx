@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, FileText } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -43,6 +43,9 @@ interface Project {
   deadline: string | null;
   client_id: string | null;
   created_at: string;
+  project_type: string;
+  package_total_arts: number | null;
+  package_total_value: number | null;
   clients?: { name: string } | null;
 }
 
@@ -112,6 +115,30 @@ export default function Projects() {
   const [hourlyRate, setHourlyRate] = useState('');
   const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
+  
+  // Package state
+  const [projectType, setProjectType] = useState<'single' | 'package'>('single');
+  const [packageTotalValue, setPackageTotalValue] = useState('');
+  const [packageTotalArts, setPackageTotalArts] = useState('');
+  const [artNames, setArtNames] = useState<string[]>([]);
+
+  // Effect to manage art names array based on package total
+  useEffect(() => {
+    if (projectType === 'package') {
+      const total = parseInt(packageTotalArts) || 0;
+      setArtNames(prev => {
+        if (total > prev.length) {
+          const newNames = [...prev];
+          for (let i = prev.length; i < total; i++) {
+            newNames.push('');
+          }
+          return newNames;
+        } else {
+          return prev.slice(0, total);
+        }
+      });
+    }
+  }, [packageTotalArts, projectType]);
 
   useEffect(() => {
     fetchData();
@@ -150,9 +177,25 @@ export default function Projects() {
     setStartDate('');
     setDeadline('');
     setEditingProject(null);
+    setProjectType('single');
+    setPackageTotalValue('');
+    setPackageTotalArts('');
+    setArtNames([]);
   };
 
-  const openEditDialog = (project: Project) => {
+  const loadProjectArts = async (projectId: string) => {
+    const { data } = await supabase
+      .from('project_arts')
+      .select('name, order_index')
+      .eq('project_id', projectId)
+      .order('order_index', { ascending: true });
+    
+    if (data && data.length > 0) {
+      setArtNames(data.map(art => art.name));
+    }
+  };
+
+  const openEditDialog = async (project: Project) => {
     setEditingProject(project);
     setName(project.name);
     setDescription(project.description || '');
@@ -164,6 +207,17 @@ export default function Projects() {
     setHourlyRate(project.hourly_rate?.toString() || '');
     setStartDate(project.start_date || '');
     setDeadline(project.deadline || '');
+    
+    // Load package data
+    const pType = (project.project_type === 'package' ? 'package' : 'single') as 'single' | 'package';
+    setProjectType(pType);
+    setPackageTotalValue(project.package_total_value?.toString() || '');
+    setPackageTotalArts(project.package_total_arts?.toString() || '');
+    
+    if (pType === 'package') {
+      await loadProjectArts(project.id);
+    }
+    
     setIsDialogOpen(true);
   };
 
@@ -171,17 +225,25 @@ export default function Projects() {
     e.preventDefault();
     if (!user) return;
 
+    // For package projects, auto-generate name if empty
+    const clientName = clients.find(c => c.id === clientId)?.name || 'Cliente';
+    const projectName = projectType === 'package' && !name 
+      ? `Pacote - ${clientName}` 
+      : name;
+
     const projectData = {
       user_id: user.id,
-      name,
+      name: projectName,
       description: description || null,
       client_id: clientId || null,
       status,
       priority,
-      project_type: 'single',
-      billing_type: billingType,
-      budget: budget ? parseFloat(budget) : null,
-      hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+      project_type: projectType,
+      billing_type: projectType === 'package' ? 'fixed' : billingType,
+      budget: projectType === 'package' ? null : (budget ? parseFloat(budget) : null),
+      hourly_rate: projectType === 'package' ? null : (hourlyRate ? parseFloat(hourlyRate) : null),
+      package_total_value: projectType === 'package' && packageTotalValue ? parseFloat(packageTotalValue) : null,
+      package_total_arts: projectType === 'package' && packageTotalArts ? parseInt(packageTotalArts) : null,
       start_date: startDate || null,
       deadline: deadline || null,
     };
@@ -193,18 +255,56 @@ export default function Projects() {
         return;
       }
 
+      // Update arts if package
+      if (projectType === 'package') {
+        // Delete existing arts
+        await supabase.from('project_arts').delete().eq('project_id', editingProject.id);
+        
+        // Insert new arts
+        const artsToInsert = artNames.map((artName, index) => ({
+          project_id: editingProject.id,
+          user_id: user.id,
+          name: artName || `Arte ${String(index + 1).padStart(2, '0')}`,
+          order_index: index + 1,
+          status: 'pending',
+          art_type: 'feed',
+        }));
+
+        if (artsToInsert.length > 0) {
+          await supabase.from('project_arts').insert(artsToInsert);
+        }
+      }
+
       toast({ title: 'Projeto atualizado com sucesso!' });
       fetchData();
       setIsDialogOpen(false);
       resetForm();
     } else {
-      const { error } = await supabase
+      const { data: newProject, error } = await supabase
         .from('projects')
-        .insert([projectData]);
+        .insert([projectData])
+        .select()
+        .single();
 
       if (error) {
         toast({ variant: 'destructive', title: 'Erro ao criar projeto', description: error.message });
         return;
+      }
+
+      // Create arts if package
+      if (projectType === 'package' && newProject) {
+        const artsToInsert = artNames.map((artName, index) => ({
+          project_id: newProject.id,
+          user_id: user.id,
+          name: artName || `Arte ${String(index + 1).padStart(2, '0')}`,
+          order_index: index + 1,
+          status: 'pending',
+          art_type: 'feed',
+        }));
+
+        if (artsToInsert.length > 0) {
+          await supabase.from('project_arts').insert(artsToInsert);
+        }
       }
 
       toast({ title: 'Projeto criado com sucesso!' });
@@ -275,18 +375,130 @@ export default function Projects() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Nome do Projeto */}
+                  {/* Tipo de Projeto */}
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="name">Nome do Projeto *</Label>
-                    <Input 
-                      id="name" 
-                      value={name} 
-                      onChange={(e) => setName(toTitleCase(e.target.value))} 
-                      required 
-                      className="glass border-white/10" 
-                      placeholder="Digite o nome..."
-                    />
+                    <Label>Tipo de Projeto</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setProjectType('single')}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          projectType === 'single'
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-white/10 glass hover:border-white/20'
+                        }`}
+                      >
+                        <FileText className="h-5 w-5" />
+                        <span className="font-medium">Projeto Avulso</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProjectType('package')}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          projectType === 'package'
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-white/10 glass hover:border-white/20'
+                        }`}
+                      >
+                        <Package className="h-5 w-5" />
+                        <span className="font-medium">Pacote de Artes</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Nome do Projeto - only for single */}
+                  {projectType === 'single' && (
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="name">Nome do Projeto *</Label>
+                      <Input 
+                        id="name" 
+                        value={name} 
+                        onChange={(e) => setName(toTitleCase(e.target.value))} 
+                        required 
+                        className="glass border-white/10" 
+                        placeholder="Digite o nome..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Package fields */}
+                  {projectType === 'package' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$)</Label>
+                        <Input 
+                          id="packageTotalValue" 
+                          type="number" 
+                          step="0.01"
+                          value={packageTotalValue} 
+                          onChange={(e) => setPackageTotalValue(e.target.value)} 
+                          className="glass border-white/10" 
+                          placeholder="1500,00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="packageTotalArts">Número Total de Artes *</Label>
+                        <Input 
+                          id="packageTotalArts" 
+                          type="number" 
+                          min="1"
+                          value={packageTotalArts} 
+                          onChange={(e) => setPackageTotalArts(e.target.value)} 
+                          required={projectType === 'package'}
+                          className="glass border-white/10" 
+                          placeholder="3"
+                        />
+                      </div>
+
+                      {/* Art names - only show after filling quantity */}
+                      {artNames.length > 0 && (
+                        <div className="space-y-3 sm:col-span-2">
+                          <div className="flex items-center gap-2 text-primary">
+                            <Package className="h-4 w-4" />
+                            <Label className="text-primary">Nomes das Artes ({artNames.length})</Label>
+                          </div>
+                          <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                            {artNames.map((artName, index) => (
+                              <div key={index} className="space-y-1">
+                                <Label htmlFor={`art-${index}`} className="text-xs text-muted-foreground">
+                                  Arte {String(index + 1).padStart(2, '0')}
+                                </Label>
+                                <Input
+                                  id={`art-${index}`}
+                                  value={artName}
+                                  onChange={(e) => {
+                                    const newNames = [...artNames];
+                                    newNames[index] = toTitleCase(e.target.value);
+                                    setArtNames(newNames);
+                                  }}
+                                  className="glass border-white/10"
+                                  placeholder={`Nome da Arte ${String(index + 1).padStart(2, '0')}`}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            💡 Formatação automática em Title Case aplicada
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Optional project name for package */}
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="name">Nome do Projeto (opcional)</Label>
+                        <Input 
+                          id="name" 
+                          value={name} 
+                          onChange={(e) => setName(toTitleCase(e.target.value))} 
+                          className="glass border-white/10" 
+                          placeholder="Deixe vazio para gerar automaticamente..."
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Se vazio, será gerado como "Pacote - Nome do Cliente"
+                        </p>
+                      </div>
+                    </>
+                  )}
                   
                   {/* Descrição */}
                   <div className="space-y-2 sm:col-span-2">
@@ -336,29 +548,33 @@ export default function Projects() {
                     </Select>
                   </div>
 
-                  {/* Tipo de Cobrança */}
-                  <div className="space-y-2">
-                    <Label htmlFor="billingType">Tipo de Cobrança</Label>
-                    <Select value={billingType} onValueChange={setBillingType}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        <SelectItem value="fixed">Valor Fixo</SelectItem>
-                        <SelectItem value="hourly">Por Hora</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Tipo de Cobrança - only for single */}
+                  {projectType === 'single' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="billingType">Tipo de Cobrança</Label>
+                        <Select value={billingType} onValueChange={setBillingType}>
+                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                          <SelectContent className="glass-card border-white/10">
+                            <SelectItem value="fixed">Valor Fixo</SelectItem>
+                            <SelectItem value="hourly">Por Hora</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  {/* Valor */}
-                  {billingType === 'fixed' ? (
-                    <div className="space-y-2">
-                      <Label htmlFor="budget">Valor do Projeto (R$)</Label>
-                      <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
-                      <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
-                    </div>
+                      {/* Valor */}
+                      {billingType === 'fixed' ? (
+                        <div className="space-y-2">
+                          <Label htmlFor="budget">Valor do Projeto (R$)</Label>
+                          <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
+                          <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Data de Início */}
@@ -466,6 +682,12 @@ export default function Projects() {
                     <Badge variant="outline" className={statusColors[project.status]}>
                       {statusLabels[project.status]}
                     </Badge>
+                    {project.project_type === 'package' && (
+                      <Badge variant="outline" className="bg-violet-500/10 text-violet-400 border-violet-500/30">
+                        <Package className="h-3 w-3 mr-1" />
+                        {project.package_total_arts} artes
+                      </Badge>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
@@ -475,12 +697,17 @@ export default function Projects() {
                         {format(new Date(project.deadline), 'dd MMM', { locale: ptBR })}
                       </div>
                     )}
-                    {(project.budget || project.hourly_rate) && (
+                    {project.project_type === 'package' && project.package_total_value ? (
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <DollarSign className="h-4 w-4" />
+                        R$ {project.package_total_value.toLocaleString('pt-BR')}
+                      </div>
+                    ) : (project.budget || project.hourly_rate) ? (
                       <div className="flex items-center gap-1.5 text-emerald-400">
                         <DollarSign className="h-4 w-4" />
                         R$ {project.budget || project.hourly_rate}/h
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
