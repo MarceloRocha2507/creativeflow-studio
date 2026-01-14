@@ -47,42 +47,75 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          campaign_source: string | null
+          client_type: string | null
           company: string | null
           created_at: string
           document: string | null
           email: string | null
+          first_contact_date: string | null
           id: string
+          last_name: string | null
+          main_interest: string | null
           name: string
+          next_followup_date: string | null
           notes: string | null
+          origin: string | null
           phone: string | null
+          preferred_contact_time: string | null
+          primary_contact_method: string | null
+          product_service_interest: string | null
+          secondary_phone: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          campaign_source?: string | null
+          client_type?: string | null
           company?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
+          first_contact_date?: string | null
           id?: string
+          last_name?: string | null
+          main_interest?: string | null
           name: string
+          next_followup_date?: string | null
           notes?: string | null
+          origin?: string | null
           phone?: string | null
+          preferred_contact_time?: string | null
+          primary_contact_method?: string | null
+          product_service_interest?: string | null
+          secondary_phone?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          campaign_source?: string | null
+          client_type?: string | null
           company?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
+          first_contact_date?: string | null
           id?: string
+          last_name?: string | null
+          main_interest?: string | null
           name?: string
+          next_followup_date?: string | null
           notes?: string | null
+          origin?: string | null
           phone?: string | null
+          preferred_contact_time?: string | null
+          primary_contact_method?: string | null
+          product_service_interest?: string | null
+          secondary_phone?: string | null
           status?: string
           updated_at?: string
           user_id?: string
