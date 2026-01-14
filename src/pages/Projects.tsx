@@ -141,10 +141,34 @@ export default function Projects() {
   const [isArtModalOpen, setIsArtModalOpen] = useState(false);
   const [selectedProjectForArts, setSelectedProjectForArts] = useState<Project | null>(null);
   
+  // Nomes individuais das artes
+  const [artNames, setArtNames] = useState<string[]>([]);
+  
   // Condição para mostrar campos de nomeação no pacote
   const showNamingFields = projectType === 'package' 
     ? parseInt(packageTotalArts) > 0 
     : true;
+
+  // Atualizar campos de arte quando número de artes mudar
+  useEffect(() => {
+    if (projectType === 'package') {
+      const total = parseInt(packageTotalArts) || 0;
+      
+      setArtNames(prev => {
+        if (total > prev.length) {
+          // Adicionar novos campos
+          const newNames = [...prev];
+          for (let i = prev.length; i < total; i++) {
+            newNames.push('');
+          }
+          return newNames;
+        } else {
+          // Remover campos excedentes
+          return prev.slice(0, total);
+        }
+      });
+    }
+  }, [packageTotalArts, projectType]);
   
   // Calculated unit value
   const calculatedUnitValue = (() => {
@@ -214,6 +238,7 @@ export default function Projects() {
     setDefaultArtType('feed');
     setProjectType('single');
     setEditingProject(null);
+    setArtNames([]);
   };
 
   const openEditDialog = (project: Project) => {
@@ -317,22 +342,16 @@ export default function Projects() {
         return;
       }
 
-      // Criar artes automaticamente para pacotes - gerar nomes ao salvar
+      // Criar artes com nomes customizados
       if (projectType === 'package' && packageTotalArts && newProject) {
-        const total = parseInt(packageTotalArts);
-        const typeLabel = ART_TYPES.find(t => t.value === defaultArtType)?.label || 'Feed';
-        
-        const artsToInsert = Array.from({ length: total }, (_, index) => {
-          const artNumber = String(index + 1).padStart(2, '0');
-          return {
-            project_id: newProject.id,
-            user_id: user.id,
-            name: `${name} - ${typeLabel} - Arte ${artNumber}`,
-            order_index: index + 1,
-            status: 'pending',
-            art_type: defaultArtType,
-          };
-        });
+        const artsToInsert = artNames.map((artName, index) => ({
+          project_id: newProject.id,
+          user_id: user.id,
+          name: artName || `Arte ${String(index + 1).padStart(2, '0')}`,
+          order_index: index + 1,
+          status: 'pending',
+          art_type: defaultArtType,
+        }));
 
         const { error: artsError } = await supabase.from('project_arts').insert(artsToInsert);
         if (artsError) {
@@ -635,17 +654,35 @@ export default function Projects() {
                             <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
                           </div>
 
-                          {/* Informação sobre nomes das artes */}
-                          {name && (
-                            <div className="sm:col-span-2 p-3 rounded-lg glass border border-white/10">
-                              <p className="text-xs text-muted-foreground">
-                                💡 As artes serão geradas automaticamente ao salvar:
-                              </p>
-                              <p className="text-sm text-primary mt-1">
-                                "{name} - {ART_TYPES.find(t => t.value === defaultArtType)?.label || 'Feed'} - Arte 01" até "Arte {String(parseInt(packageTotalArts) || 1).padStart(2, '0')}"
-                              </p>
+                          {/* Campos individuais para nome de cada arte */}
+                          <div className="sm:col-span-2 space-y-3">
+                            <Label className="flex items-center gap-2">
+                              <Package className="h-4 w-4" />
+                              Nomes das Artes ({packageTotalArts})
+                            </Label>
+                            <div className="space-y-2 max-h-60 overflow-y-auto p-3 glass rounded-lg border border-white/10">
+                              {artNames.map((artName, index) => (
+                                <div key={index} className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">
+                                    Arte {String(index + 1).padStart(2, '0')}
+                                  </Label>
+                                  <Input
+                                    value={artName}
+                                    onChange={(e) => {
+                                      const newNames = [...artNames];
+                                      newNames[index] = toTitleCase(e.target.value);
+                                      setArtNames(newNames);
+                                    }}
+                                    className="glass border-white/10"
+                                    placeholder={`Nome da Arte ${index + 1}`}
+                                  />
+                                </div>
+                              ))}
                             </div>
-                          )}
+                            <p className="text-xs text-muted-foreground">
+                              💡 Digite os nomes individualmente. Formatação automática em Title Case.
+                            </p>
+                          </div>
                         </>
                       )}
                     </>
