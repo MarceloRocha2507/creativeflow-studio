@@ -12,10 +12,11 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator, Image, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator, Image, CheckCircle2, Settings } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ArtManagementModal, ART_TYPES, generateArtNames } from '@/components/projects/ArtManagementModal';
 
 interface Client {
   id: string;
@@ -28,6 +29,7 @@ interface ProjectArt {
   name: string;
   order_index: number;
   status: string;
+  art_type: string;
 }
 
 interface Project {
@@ -55,14 +57,6 @@ interface ClientGroup {
   clientName: string;
   projects: Project[];
 }
-
-// Função para gerar nomes de artes automaticamente
-const generateArtNames = (projectName: string, totalArts: number): string[] => {
-  return Array.from({ length: totalArts }, (_, index) => {
-    const artNumber = String(index + 1).padStart(2, '0');
-    return `${projectName} - Arte ${artNumber}`;
-  });
-};
 
 // Agrupa projetos por cliente - apenas clientes com 2+ projetos são agrupados
 const groupProjectsByClient = (projects: Project[]): { clientGroups: ClientGroup[]; standalone: Project[] } => {
@@ -132,6 +126,11 @@ export default function Projects() {
   const [packageTotalValue, setPackageTotalValue] = useState('');
   const [packageTotalArts, setPackageTotalArts] = useState('');
   const [googleDriveLink, setGoogleDriveLink] = useState('');
+  const [defaultArtType, setDefaultArtType] = useState('feed');
+  
+  // Art management modal state
+  const [isArtModalOpen, setIsArtModalOpen] = useState(false);
+  const [selectedProjectForArts, setSelectedProjectForArts] = useState<Project | null>(null);
   
   // Calculated unit value
   const calculatedUnitValue = (() => {
@@ -198,6 +197,7 @@ export default function Projects() {
     setPackageTotalValue('');
     setPackageTotalArts('');
     setGoogleDriveLink('');
+    setDefaultArtType('feed');
     setProjectType('single');
     setEditingProject(null);
   };
@@ -231,11 +231,11 @@ export default function Projects() {
     if (projectType === 'package' && name && packageTotalArts) {
       const total = parseInt(packageTotalArts);
       if (total > 0 && total <= 100) {
-        return generateArtNames(name, total);
+        return generateArtNames(name, defaultArtType, total);
       }
     }
     return [];
-  }, [projectType, name, packageTotalArts]);
+  }, [projectType, name, packageTotalArts, defaultArtType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,14 +273,19 @@ export default function Projects() {
         const currentTotal = currentArts.length;
 
         if (newTotal > currentTotal) {
-          // Adicionar novas artes
-          const newArts = Array.from({ length: newTotal - currentTotal }, (_, index) => ({
-            project_id: editingProject.id,
-            user_id: user.id,
-            name: `${name} - Arte ${String(currentTotal + index + 1).padStart(2, '0')}`,
-            order_index: currentTotal + index + 1,
-            status: 'pending',
-          }));
+          // Adicionar novas artes com o novo padrão
+          const newArts = Array.from({ length: newTotal - currentTotal }, (_, index) => {
+            const artNumber = String(currentTotal + index + 1).padStart(2, '0');
+            const typeLabel = ART_TYPES.find(t => t.value === defaultArtType)?.label || 'Feed';
+            return {
+              project_id: editingProject.id,
+              user_id: user.id,
+              name: `${name} - ${typeLabel} - Arte ${artNumber}`,
+              order_index: currentTotal + index + 1,
+              status: 'pending',
+              art_type: defaultArtType,
+            };
+          });
           await supabase.from('project_arts').insert(newArts);
         } else if (newTotal < currentTotal) {
           // Remover artes excedentes (do final)
@@ -311,7 +316,7 @@ export default function Projects() {
       // Criar artes automaticamente para pacotes
       if (projectType === 'package' && packageTotalArts && newProject) {
         const totalArts = parseInt(packageTotalArts);
-        const artNames = generateArtNames(name, totalArts);
+        const artNames = generateArtNames(name, defaultArtType, totalArts);
         
         const artsToInsert = artNames.map((artName, index) => ({
           project_id: newProject.id,
@@ -319,6 +324,7 @@ export default function Projects() {
           name: artName,
           order_index: index + 1,
           status: 'pending',
+          art_type: defaultArtType,
         }));
 
         const { error: artsError } = await supabase.from('project_arts').insert(artsToInsert);
@@ -541,6 +547,22 @@ export default function Projects() {
                           required
                         />
                       </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="defaultArtType">Tipo de Arte Padrão</Label>
+                        <Select value={defaultArtType} onValueChange={setDefaultArtType}>
+                          <SelectTrigger className="glass border-white/10">
+                            <SelectValue placeholder="Selecione o tipo..." />
+                          </SelectTrigger>
+                          <SelectContent className="glass-card border-white/10">
+                            {ART_TYPES.map(type => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">O tipo pode ser alterado individualmente após criar</p>
+                      </div>
                       {calculatedUnitValue > 0 && (
                         <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
                           <div className="flex items-center gap-2 text-primary">
@@ -701,9 +723,17 @@ export default function Projects() {
                       {statusLabels[project.status]}
                     </Badge>
                     {project.package_total_value && project.package_total_arts && (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                        <Package className="h-3 w-3 mr-1" />
-                        Pacote
+                      <Badge 
+                        variant="outline" 
+                        className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 cursor-pointer hover:bg-emerald-500/20 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProjectForArts(project);
+                          setIsArtModalOpen(true);
+                        }}
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        Gerenciar Artes
                       </Badge>
                     )}
                     {project.google_drive_link && (
@@ -813,6 +843,14 @@ export default function Projects() {
           })()
         )}
       </div>
+
+      {/* Modal de Gerenciamento de Artes */}
+      <ArtManagementModal
+        project={selectedProjectForArts}
+        open={isArtModalOpen}
+        onOpenChange={setIsArtModalOpen}
+        onUpdate={fetchData}
+      />
     </AppLayout>
   );
 }
