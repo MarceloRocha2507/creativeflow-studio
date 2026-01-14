@@ -132,6 +132,9 @@ export default function Projects() {
   const [isArtModalOpen, setIsArtModalOpen] = useState(false);
   const [selectedProjectForArts, setSelectedProjectForArts] = useState<Project | null>(null);
   
+  // Estado para nomes editáveis das artes no preview
+  const [customArtNames, setCustomArtNames] = useState<string[]>([]);
+  
   // Calculated unit value
   const calculatedUnitValue = (() => {
     const total = parseFloat(packageTotalValue);
@@ -200,6 +203,7 @@ export default function Projects() {
     setDefaultArtType('feed');
     setProjectType('single');
     setEditingProject(null);
+    setCustomArtNames([]);
   };
 
   const openEditDialog = (project: Project) => {
@@ -226,16 +230,35 @@ export default function Projects() {
     setIsDialogOpen(true);
   };
 
-  // Preview das artes geradas
-  const generatedArtNames = useMemo(() => {
+  // Gerar nomes padrão das artes e sincronizar com customArtNames
+  useEffect(() => {
     if (projectType === 'package' && name && packageTotalArts) {
       const total = parseInt(packageTotalArts);
       if (total > 0 && total <= 100) {
-        return generateArtNames(name, defaultArtType, total);
+        const defaultNames = generateArtNames(name, defaultArtType, total);
+        // Só atualiza se o número de artes mudou ou se está vazio
+        if (customArtNames.length !== total) {
+          // Mantém nomes customizados existentes e adiciona novos
+          const newNames = defaultNames.map((defaultName, index) => {
+            if (index < customArtNames.length && customArtNames[index] !== '') {
+              return customArtNames[index];
+            }
+            return defaultName;
+          });
+          setCustomArtNames(newNames);
+        }
       }
+    } else {
+      setCustomArtNames([]);
     }
-    return [];
   }, [projectType, name, packageTotalArts, defaultArtType]);
+
+  // Handler para atualizar nome de arte individual
+  const handleArtNameChange = (index: number, newName: string) => {
+    const updated = [...customArtNames];
+    updated[index] = newName;
+    setCustomArtNames(updated);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -315,10 +338,8 @@ export default function Projects() {
 
       // Criar artes automaticamente para pacotes
       if (projectType === 'package' && packageTotalArts && newProject) {
-        const totalArts = parseInt(packageTotalArts);
-        const artNames = generateArtNames(name, defaultArtType, totalArts);
-        
-        const artsToInsert = artNames.map((artName, index) => ({
+        // Usar nomes customizados se disponíveis
+        const artsToInsert = customArtNames.map((artName, index) => ({
           project_id: newProject.id,
           user_id: user.id,
           name: artName,
@@ -601,28 +622,30 @@ export default function Projects() {
                         <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
                       </div>
 
-                      {/* Preview das artes geradas */}
-                      {generatedArtNames.length > 0 && (
+                      {/* Preview das artes - editável */}
+                      {customArtNames.length > 0 && (
                         <div className="sm:col-span-2 space-y-3">
                           <div className="flex items-center gap-2">
                             <Image className="h-4 w-4 text-primary" />
-                            <Label className="text-primary font-medium">Preview das Artes ({generatedArtNames.length})</Label>
+                            <Label className="text-primary font-medium">Artes do Pacote ({customArtNames.length})</Label>
                           </div>
-                          <div className="p-3 rounded-lg glass border border-white/10 max-h-40 overflow-y-auto space-y-1">
-                            {generatedArtNames.slice(0, 10).map((artName, index) => (
-                              <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground py-1">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400/50" />
-                                <span className="truncate">{artName}</span>
+                          <div className="p-3 rounded-lg glass border border-white/10 max-h-60 overflow-y-auto space-y-2">
+                            {customArtNames.map((artName, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <span className="w-6 h-6 flex items-center justify-center text-xs font-medium text-muted-foreground bg-white/5 rounded shrink-0">
+                                  {String(index + 1).padStart(2, '0')}
+                                </span>
+                                <Input
+                                  value={artName}
+                                  onChange={(e) => handleArtNameChange(index, e.target.value)}
+                                  className="glass border-white/10 h-8 text-sm flex-1"
+                                  placeholder={`Arte ${String(index + 1).padStart(2, '0')}`}
+                                />
                               </div>
                             ))}
-                            {generatedArtNames.length > 10 && (
-                              <div className="text-xs text-muted-foreground/70 pt-1 border-t border-white/5">
-                                ... e mais {generatedArtNames.length - 10} artes
-                              </div>
-                            )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            💡 As artes serão criadas automaticamente ao salvar
+                            💡 Edite os nomes acima se precisar. As artes serão criadas ao salvar.
                           </p>
                         </div>
                       )}
