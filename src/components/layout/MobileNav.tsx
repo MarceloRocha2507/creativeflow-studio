@@ -115,7 +115,7 @@ export function MobileNav() {
         )}
       >
         <Icon className={cn('h-5 w-5', isActive && 'text-primary')} />
-        <span className="flex-1">{label}</span>
+        <span className="flex-1 text-left">{label}</span>
         <ChevronDown className={cn(
           "h-4 w-4 transition-transform duration-200",
           isOpen && "rotate-180"
@@ -155,7 +155,7 @@ export function MobileNav() {
                 
                 {/* Projetos - Collapsible */}
                 <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
-                  <CollapsibleTrigger className="w-full">
+                  <CollapsibleTrigger className="w-full p-0 text-left">
                     {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive)}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 overflow-hidden">
@@ -171,7 +171,7 @@ export function MobileNav() {
                 
                 {/* Configurações - Collapsible */}
                 <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-                  <CollapsibleTrigger className="w-full">
+                  <CollapsibleTrigger className="w-full p-0 text-left">
                     {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive)}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 overflow-hidden">

@@ -163,7 +163,7 @@ export function Sidebar() {
             isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
           )} />
         </div>
-        <span className="flex-1 ml-3">{label}</span>
+        <span className="flex-1 ml-3 text-left">{label}</span>
         <ChevronDown className={cn(
           "h-4 w-4 shrink-0 transition-transform duration-200",
           isOpen && "rotate-180"
@@ -199,7 +199,7 @@ export function Sidebar() {
           
           {/* Projetos - Collapsible */}
           <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
-            <CollapsibleTrigger className="w-full">
+            <CollapsibleTrigger className="w-full p-0 text-left">
               {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive)}
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -215,7 +215,7 @@ export function Sidebar() {
           
           {/* Configurações - Collapsible */}
           <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <CollapsibleTrigger className="w-full">
+            <CollapsibleTrigger className="w-full p-0 text-left">
               {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive)}
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
