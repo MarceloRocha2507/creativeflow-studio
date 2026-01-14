@@ -208,6 +208,7 @@ export default function Projects() {
 
   const openEditDialog = async (project: Project) => {
     setEditingProject(project);
+    setFormStep(1); // Reset to step 1 when editing
     setName(project.name);
     setDescription(project.description || '');
     setClientId(project.client_id || '');
