@@ -63,6 +63,7 @@ const CONTACT_METHOD_OPTIONS = [
   { value: 'telefone', label: 'Telefone' },
   { value: 'email', label: 'E-mail' },
   { value: 'instagram_dm', label: 'Instagram Direct' },
+  { value: 'discord', label: 'Discord' },
   { value: 'presencial', label: 'Presencial' },
   { value: 'outro', label: 'Outro' },
 ];
