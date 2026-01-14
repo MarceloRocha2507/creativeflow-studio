@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Calendar, DollarSign, User, Package, Clock, Pencil, 
   ChevronDown, ExternalLink, AlertCircle, CheckCircle2, 
@@ -312,7 +311,7 @@ export function ProjectDetailsDialog({
                 </TabsTrigger>
               </TabsList>
 
-              <ScrollArea className="flex-1 px-6 py-4">
+              <ScrollArea className="flex-1 max-h-[50vh] px-6 py-4">
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="mt-0 space-y-4 animate-fade-in">
                   {/* Description */}
@@ -450,22 +449,15 @@ export function ProjectDetailsDialog({
                           </div>
                           
                           <DropdownMenu>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenuTrigger asChild>
-                                  <Badge 
-                                    variant="outline" 
-                                    className="cursor-pointer hover:bg-primary/20 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1"
-                                  >
-                                    {artStatusLabels[art.status] || art.status}
-                                    <ChevronDown className="h-3 w-3" />
-                                  </Badge>
-                                </DropdownMenuTrigger>
-                              </TooltipTrigger>
-                              <TooltipContent side="left" className="text-xs">
-                                Alterar status
-                              </TooltipContent>
-                            </Tooltip>
+                            <DropdownMenuTrigger asChild>
+                              <Badge 
+                                variant="outline" 
+                                className="cursor-pointer hover:bg-primary/20 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1"
+                              >
+                                {artStatusLabels[art.status] || art.status}
+                                <ChevronDown className="h-3 w-3" />
+                              </Badge>
+                            </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card border-white/10">
                               <DropdownMenuItem onClick={() => onUpdateArtStatus(art.id, 'pending')}>
                                 <div className="w-2 h-2 rounded-full bg-muted-foreground mr-2" />
