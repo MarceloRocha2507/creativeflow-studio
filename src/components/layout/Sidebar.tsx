@@ -30,18 +30,28 @@ import {
 
 const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
 
-const navigation = [
+// Menu principal reduzido
+const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clientes', href: '/clients', icon: Users },
-  { name: 'Projetos', href: '/projects', icon: FolderKanban },
-  { name: 'Horas', href: '/time-tracking', icon: Clock },
-  { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
   { name: 'Financeiro', href: '/finances', icon: DollarSign },
-  { name: 'Notificações', href: '/notifications', icon: Bell },
-  { name: 'Meu Perfil', href: '/profile', icon: UserCircle },
-  { name: 'Configurações', href: '/settings', icon: Settings },
 ];
 
+// Submenu de Projetos
+const projectsNavigation = [
+  { name: 'Todos os Projetos', href: '/projects', icon: FolderKanban },
+  { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
+  { name: 'Horas', href: '/time-tracking', icon: Clock },
+];
+
+// Submenu de Configurações
+const settingsNavigation = [
+  { name: 'Meu Perfil', href: '/profile', icon: UserCircle },
+  { name: 'Notificações', href: '/notifications', icon: Bell },
+  { name: 'Preferências', href: '/settings', icon: Settings },
+];
+
+// Admin navigation
 const adminNavigation = [
   { name: 'Painel Admin', href: '/admin', icon: Shield },
   { name: 'Usuários', href: '/admin/users', icon: Users },
@@ -50,10 +60,23 @@ const adminNavigation = [
   { name: 'Status da Loja', href: '/admin/shop-status', icon: Store },
 ];
 
+// Rotas de cada submenu
+const projectRoutes = ['/projects', '/tasks', '/time-tracking'];
+const settingsRoutes = ['/profile', '/notifications', '/settings'];
+
 export function Sidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  
+  // Estado dos submenus
+  const [projectsOpen, setProjectsOpen] = useState(() => {
+    return projectRoutes.includes(location.pathname);
+  });
+  
+  const [settingsOpen, setSettingsOpen] = useState(() => {
+    return settingsRoutes.includes(location.pathname);
+  });
   
   const [adminOpen, setAdminOpen] = useState(() => {
     const saved = localStorage.getItem(ADMIN_MENU_KEY);
@@ -61,11 +84,24 @@ export function Sidebar() {
     return false;
   });
 
+  // Auto-expandir submenu quando navegar para uma rota dentro dele
+  useEffect(() => {
+    if (projectRoutes.includes(location.pathname)) {
+      setProjectsOpen(true);
+    }
+    if (settingsRoutes.includes(location.pathname)) {
+      setSettingsOpen(true);
+    }
+  }, [location.pathname]);
+
   useEffect(() => {
     localStorage.setItem(ADMIN_MENU_KEY, String(adminOpen));
   }, [adminOpen]);
 
-  const renderNavItem = (item: typeof navigation[0], index: number) => {
+  const isProjectsActive = projectRoutes.includes(location.pathname);
+  const isSettingsActive = settingsRoutes.includes(location.pathname);
+
+  const renderNavItem = (item: typeof mainNavigation[0], isSubItem = false) => {
     const isActive = location.pathname === item.href;
     return (
       <Link
@@ -73,13 +109,11 @@ export function Sidebar() {
         to={item.href}
         className={cn(
           'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
+          isSubItem && 'ml-4',
           isActive
             ? 'bg-primary/10 text-primary active-indicator'
             : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
         )}
-        style={{ 
-          animationDelay: `${index * 50}ms`,
-        }}
       >
         <div className={cn(
           'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
@@ -99,6 +133,42 @@ export function Sidebar() {
           )}
         </span>
       </Link>
+    );
+  };
+
+  const renderCollapsibleTrigger = (
+    icon: React.ElementType,
+    label: string,
+    isOpen: boolean,
+    isActive: boolean
+  ) => {
+    const Icon = icon;
+    return (
+      <div
+        className={cn(
+          'group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 cursor-pointer',
+          isActive
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+        )}
+      >
+        <div className={cn(
+          'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
+          isActive 
+            ? 'bg-primary/20 icon-glow' 
+            : 'bg-secondary/50 group-hover:bg-secondary'
+        )}>
+          <Icon className={cn(
+            'h-4 w-4 transition-all duration-300',
+            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+          )} />
+        </div>
+        <span className="flex-1">{label}</span>
+        <ChevronDown className={cn(
+          "h-4 w-4 transition-transform duration-200",
+          isOpen && "rotate-180"
+        )} />
+      </div>
     );
   };
 
@@ -123,11 +193,39 @@ export function Sidebar() {
               Menu Principal
             </span>
           </div>
-          {navigation.map((item, index) => renderNavItem(item, index))}
+          
+          {/* Dashboard */}
+          {renderNavItem(mainNavigation[0])}
+          
+          {/* Projetos - Collapsible */}
+          <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
+            <CollapsibleTrigger className="w-full">
+              {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive)}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+              {projectsNavigation.map((item) => renderNavItem(item, true))}
+            </CollapsibleContent>
+          </Collapsible>
+          
+          {/* Clientes */}
+          {renderNavItem(mainNavigation[1])}
+          
+          {/* Financeiro */}
+          {renderNavItem(mainNavigation[2])}
+          
+          {/* Configurações - Collapsible */}
+          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <CollapsibleTrigger className="w-full">
+              {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive)}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+              {settingsNavigation.map((item) => renderNavItem(item, true))}
+            </CollapsibleContent>
+          </Collapsible>
 
-          {/* Admin Section */}
+          {/* Admin Section - Separado e colapsado por padrão */}
           {isAdmin && (
-            <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="mt-4">
+            <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="mt-6 pt-4 border-t border-border/50">
               <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground transition-colors">
                 <span>Administração</span>
                 <ChevronDown className={cn(
@@ -136,7 +234,7 @@ export function Sidebar() {
                 )} />
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                {adminNavigation.map((item, index) => renderNavItem(item, index))}
+                {adminNavigation.map((item) => renderNavItem(item))}
               </CollapsibleContent>
             </Collapsible>
           )}
