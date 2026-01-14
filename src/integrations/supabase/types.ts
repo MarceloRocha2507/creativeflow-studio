@@ -54,6 +54,7 @@ export type Database = {
           document: string | null
           email: string | null
           first_contact_date: string | null
+          google_drive_link: string | null
           id: string
           last_name: string | null
           main_interest: string | null
@@ -61,6 +62,8 @@ export type Database = {
           next_followup_date: string | null
           notes: string | null
           origin: string | null
+          package_total_arts: number | null
+          package_total_value: number | null
           phone: string | null
           preferred_contact_time: string | null
           primary_contact_method: string | null
@@ -79,6 +82,7 @@ export type Database = {
           document?: string | null
           email?: string | null
           first_contact_date?: string | null
+          google_drive_link?: string | null
           id?: string
           last_name?: string | null
           main_interest?: string | null
@@ -86,6 +90,8 @@ export type Database = {
           next_followup_date?: string | null
           notes?: string | null
           origin?: string | null
+          package_total_arts?: number | null
+          package_total_value?: number | null
           phone?: string | null
           preferred_contact_time?: string | null
           primary_contact_method?: string | null
@@ -104,6 +110,7 @@ export type Database = {
           document?: string | null
           email?: string | null
           first_contact_date?: string | null
+          google_drive_link?: string | null
           id?: string
           last_name?: string | null
           main_interest?: string | null
@@ -111,6 +118,8 @@ export type Database = {
           next_followup_date?: string | null
           notes?: string | null
           origin?: string | null
+          package_total_arts?: number | null
+          package_total_value?: number | null
           phone?: string | null
           preferred_contact_time?: string | null
           primary_contact_method?: string | null
