@@ -11,10 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, FileText } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, FileText, Eye, Clock } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Função para formatar texto em Title Case
 const toTitleCase = (text: string): string => {
@@ -53,6 +54,20 @@ interface ClientGroup {
   clientId: string;
   clientName: string;
   projects: Project[];
+}
+
+interface ProjectArt {
+  id: string;
+  name: string;
+  status: string;
+  art_type: string;
+  order_index: number;
+}
+
+interface TimeEntry {
+  id: string;
+  duration_minutes: number | null;
+  description: string | null;
 }
 
 // Agrupa projetos por cliente - apenas clientes com 2+ projetos são agrupados
@@ -101,6 +116,14 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // View details state
+  const [viewingProject, setViewingProject] = useState<Project | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [projectArts, setProjectArts] = useState<ProjectArt[]>([]);
+  const [projectTimeEntries, setProjectTimeEntries] = useState<TimeEntry[]>([]);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -232,6 +255,59 @@ export default function Projects() {
     }
     
     setIsDialogOpen(true);
+  };
+
+  const openViewDialog = async (project: Project) => {
+    setViewingProject(project);
+    setIsViewDialogOpen(true);
+    setIsLoadingDetails(true);
+    setProjectArts([]);
+    setProjectTimeEntries([]);
+    
+    try {
+      // Load arts if package
+      if (project.project_type === 'package') {
+        const { data: arts } = await supabase
+          .from('project_arts')
+          .select('id, name, status, art_type, order_index')
+          .eq('project_id', project.id)
+          .order('order_index');
+        setProjectArts(arts || []);
+      }
+      
+      // Load time entries
+      const { data: timeEntries } = await supabase
+        .from('time_entries')
+        .select('id, duration_minutes, description')
+        .eq('project_id', project.id);
+      setProjectTimeEntries(timeEntries || []);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
+
+  const formatTotalTime = (entries: TimeEntry[]) => {
+    const totalMinutes = entries.reduce((acc, e) => acc + (e.duration_minutes || 0), 0);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    if (hours === 0 && mins === 0) return 'Sem registros';
+    if (hours === 0) return `${mins}min`;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}min`;
+  };
+
+  const priorityLabels: Record<string, string> = {
+    low: 'Baixa',
+    medium: 'Média',
+    high: 'Alta',
+    urgent: 'Urgente',
+  };
+
+  const artStatusLabels: Record<string, string> = {
+    pending: 'Pendente',
+    in_progress: 'Em andamento',
+    completed: 'Concluída',
+    approved: 'Aprovada',
   };
 
   const submitProject = async () => {
@@ -758,6 +834,10 @@ export default function Projects() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass-card border-white/10">
+                      <DropdownMenuItem onClick={() => openViewDialog(project)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver detalhes
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEditDialog(project)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar
@@ -849,6 +929,166 @@ export default function Projects() {
             );
           })()
         )}
+
+        {/* View Details Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="glass-card border-white/10 sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl text-gradient">{viewingProject?.name}</DialogTitle>
+            </DialogHeader>
+            
+            {isLoadingDetails ? (
+              <div className="flex justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : viewingProject && (
+              <div className="space-y-5">
+                {/* Status Badges */}
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className={statusColors[viewingProject.status]}>
+                    {statusLabels[viewingProject.status]}
+                  </Badge>
+                  <Badge variant="outline" className={priorityColors[viewingProject.priority]}>
+                    {priorityLabels[viewingProject.priority]}
+                  </Badge>
+                  {viewingProject.project_type === 'package' && (
+                    <Badge variant="outline" className="bg-violet-500/10 text-violet-400 border-violet-500/30">
+                      <Package className="h-3 w-3 mr-1" />
+                      Pacote
+                    </Badge>
+                  )}
+                </div>
+                
+                {/* Client & Description */}
+                <div className="space-y-3">
+                  {viewingProject.clients?.name && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-primary/70" />
+                      <span className="text-muted-foreground">Cliente:</span>
+                      <span className="font-medium">{viewingProject.clients.name}</span>
+                    </div>
+                  )}
+                  {viewingProject.description && (
+                    <p className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">
+                      {viewingProject.description}
+                    </p>
+                  )}
+                </div>
+                
+                {/* Schedule */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Cronograma
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="glass rounded-lg p-3 border border-white/5">
+                      <span className="text-xs text-muted-foreground">Início</span>
+                      <p className="font-medium">
+                        {viewingProject.start_date 
+                          ? format(new Date(viewingProject.start_date), "dd 'de' MMM, yyyy", { locale: ptBR }) 
+                          : 'Não definido'}
+                      </p>
+                    </div>
+                    <div className="glass rounded-lg p-3 border border-white/5">
+                      <span className="text-xs text-muted-foreground">Prazo</span>
+                      <p className="font-medium">
+                        {viewingProject.deadline 
+                          ? format(new Date(viewingProject.deadline), "dd 'de' MMM, yyyy", { locale: ptBR }) 
+                          : 'Não definido'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Financial */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Financeiro
+                  </h4>
+                  <div className="glass rounded-lg p-4 border border-white/5">
+                    <p className="text-2xl font-bold text-emerald-400">
+                      {viewingProject.project_type === 'package' && viewingProject.package_total_value
+                        ? `R$ ${viewingProject.package_total_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        : viewingProject.budget
+                          ? `R$ ${viewingProject.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          : viewingProject.hourly_rate
+                            ? `R$ ${viewingProject.hourly_rate.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/h`
+                            : 'Não definido'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {viewingProject.project_type === 'package' 
+                        ? 'Valor do pacote' 
+                        : viewingProject.billing_type === 'fixed' 
+                          ? 'Valor fixo' 
+                          : 'Por hora'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Package Arts */}
+                {viewingProject.project_type === 'package' && projectArts.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Artes do Pacote ({projectArts.length})
+                    </h4>
+                    <ScrollArea className="max-h-40 glass rounded-lg border border-white/5">
+                      <div className="p-3 space-y-2">
+                        {projectArts.map(art => (
+                          <div key={art.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-white/5">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                art.status === 'completed' || art.status === 'approved' 
+                                  ? 'bg-emerald-400' 
+                                  : art.status === 'in_progress'
+                                    ? 'bg-cyan-400'
+                                    : 'bg-muted-foreground'
+                              }`} />
+                              <span className="text-sm">{art.name}</span>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {artStatusLabels[art.status] || art.status}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+                
+                {/* Time Worked */}
+                <div className="flex items-center gap-2 glass rounded-lg p-3 border border-white/5">
+                  <Clock className="h-4 w-4 text-primary/70" />
+                  <span className="text-sm text-muted-foreground">Tempo trabalhado:</span>
+                  <span className="font-medium">{formatTotalTime(projectTimeEntries)}</span>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-2 pt-2 border-t border-white/10">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsViewDialogOpen(false)} 
+                    className="flex-1 glass border-white/10"
+                  >
+                    Fechar
+                  </Button>
+                  <Button 
+                    onClick={() => { 
+                      setIsViewDialogOpen(false); 
+                      if (viewingProject) openEditDialog(viewingProject); 
+                    }} 
+                    className="flex-1 gradient-primary glow-primary"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
