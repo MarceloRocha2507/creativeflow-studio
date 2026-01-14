@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,13 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, FileText, Eye, Clock, ChevronDown } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Plus, Search, FolderKanban, Users, Package, FileText, LayoutGrid, List, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ProjectDetailsDialog } from '@/components/projects/ProjectDetailsDialog';
+import { StatusChips } from '@/components/projects/StatusChips';
+import { ProjectListView } from '@/components/projects/ProjectListView';
+import { ProjectCard } from '@/components/projects/ProjectCard';
 
 // Função para formatar texto em Title Case
 const toTitleCase = (text: string): string => {
@@ -118,6 +118,9 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'created' | 'deadline' | 'priority' | 'name' | 'value'>('created');
+  const [artsProgress, setArtsProgress] = useState<Record<string, number>>({});
   
   // View details state
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
@@ -460,43 +463,76 @@ export default function Projects() {
     }
   };
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filter projects
+  const filteredProjects = useMemo(() => {
+    let result = projects.filter(project => {
+      const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (project.clients?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
 
-  // Import unified status configs from shared lib
-  const statusColorsMap: Record<string, string> = {
-    in_progress: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
-    pending_approval: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    paused: 'bg-muted/50 text-muted-foreground border-border/50',
-    cancelled: 'bg-red-500/10 text-red-400 border-red-500/30',
-    not_started: 'bg-muted/50 text-muted-foreground border-muted',
-    on_hold: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
-  };
+    // Sort projects
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'deadline':
+          if (!a.deadline && !b.deadline) return 0;
+          if (!a.deadline) return 1;
+          if (!b.deadline) return -1;
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        case 'priority':
+          const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+          return (priorityOrder[a.priority as keyof typeof priorityOrder] || 2) - 
+                 (priorityOrder[b.priority as keyof typeof priorityOrder] || 2);
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'value':
+          const valueA = a.project_type === 'package' ? a.package_total_value : a.budget;
+          const valueB = b.project_type === 'package' ? b.package_total_value : b.budget;
+          return (valueB || 0) - (valueA || 0);
+        case 'created':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
 
-  const statusLabelsMap: Record<string, string> = {
-    in_progress: 'Em andamento',
-    pending_approval: 'Aguardando aprovação',
-    completed: 'Concluído',
-    paused: 'Pausado',
-    cancelled: 'Cancelado',
-    not_started: 'Não iniciado',
-    on_hold: 'Pausado',
-  };
+    return result;
+  }, [projects, searchQuery, statusFilter, sortBy]);
 
-  // Accent colors for card left strips (solid colors)
-  const statusAccentColors: Record<string, string> = {
-    not_started: 'bg-muted-foreground',
-    in_progress: 'bg-cyan-400',
-    pending_approval: 'bg-amber-400',
-    on_hold: 'bg-yellow-400',
-    paused: 'bg-muted-foreground',
-    completed: 'bg-emerald-400',
-    cancelled: 'bg-red-400',
-  };
+  // Calculate stats
+  const stats = useMemo(() => {
+    const inProgress = projects.filter(p => p.status === 'in_progress').length;
+    const totalValue = projects.reduce((acc, p) => {
+      const val = p.project_type === 'package' ? p.package_total_value : p.budget;
+      return acc + (val || 0);
+    }, 0);
+    return { total: projects.length, inProgress, totalValue };
+  }, [projects]);
+
+  // Fetch arts progress for packages
+  useEffect(() => {
+    const fetchArtsProgress = async () => {
+      const packageProjects = projects.filter(p => p.project_type === 'package');
+      if (packageProjects.length === 0) return;
+
+      const { data } = await supabase
+        .from('project_arts')
+        .select('project_id, status')
+        .in('project_id', packageProjects.map(p => p.id));
+
+      if (data) {
+        const progress: Record<string, number> = {};
+        data.forEach(art => {
+          if (art.status === 'completed' || art.status === 'approved') {
+            progress[art.project_id] = (progress[art.project_id] || 0) + 1;
+          }
+        });
+        setArtsProgress(progress);
+      }
+    };
+
+    fetchArtsProgress();
+  }, [projects]);
 
   return (
     <AppLayout>
@@ -505,7 +541,10 @@ export default function Projects() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold lg:text-3xl text-gradient">Projetos</h1>
-            <p className="text-muted-foreground">Gerencie seus projetos e serviços</p>
+            <p className="text-muted-foreground text-sm">
+              {stats.total} projetos • {stats.inProgress} em andamento
+              {stats.totalValue > 0 && ` • R$ ${stats.totalValue.toLocaleString('pt-BR')} em valor`}
+            </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
@@ -825,24 +864,54 @@ export default function Projects() {
           </Dialog>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col gap-4 sm:flex-row">
+        {/* Status Chips */}
+        <StatusChips 
+          projects={projects} 
+          activeStatus={statusFilter} 
+          onStatusChange={setStatusFilter} 
+        />
+
+        {/* Filters and View Toggle */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Buscar projetos..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 glass border-white/10" />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48 glass border-white/10">
-              <SelectValue placeholder="Status" />
+          
+          {/* Sort */}
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val as typeof sortBy)}>
+            <SelectTrigger className="w-full sm:w-44 glass border-white/10">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Ordenar" />
             </SelectTrigger>
             <SelectContent className="glass-card border-white/10">
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="in_progress">Em andamento</SelectItem>
-              <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
-              <SelectItem value="completed">Concluídos</SelectItem>
-              <SelectItem value="paused">Pausados</SelectItem>
+              <SelectItem value="created">Mais recentes</SelectItem>
+              <SelectItem value="deadline">Por prazo</SelectItem>
+              <SelectItem value="priority">Por prioridade</SelectItem>
+              <SelectItem value="name">Por nome</SelectItem>
+              <SelectItem value="value">Por valor</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* View Toggle */}
+          <div className="flex border border-white/10 rounded-lg overflow-hidden">
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="rounded-none h-9"
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="rounded-none h-9"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Projects Grid */}
@@ -862,86 +931,27 @@ export default function Projects() {
               </p>
             </CardContent>
           </Card>
+        ) : viewMode === 'list' ? (
+          <ProjectListView
+            projects={filteredProjects}
+            onView={openViewDialog}
+            onEdit={openEditDialog}
+            onDelete={handleDelete}
+          />
         ) : (
           (() => {
             const { clientGroups, standalone } = groupProjectsByClient(filteredProjects);
 
-            const ProjectCard = ({ project, index }: { project: Project; index: number }) => (
-              <Card 
-                key={project.id} 
-                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-primary/20 hover:border-primary/40 hover:bg-card/80 cursor-pointer active:scale-[0.98] relative overflow-hidden"
-                style={{ animationDelay: `${index * 50}ms` }}
-                onClick={() => openViewDialog(project)}
-              >
-                {/* Status accent strip on left side */}
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusAccentColors[project.status] || 'bg-muted-foreground'}`} />
-                
-                <CardHeader className="flex flex-row items-start justify-between pb-2 pl-5">
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{project.name}</CardTitle>
-                    {project.clients?.name && (
-                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <User className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-                        <span className="truncate">{project.clients.name}</span>
-                      </div>
-                    )}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="glass-card border-white/10">
-                      <DropdownMenuItem onClick={() => openViewDialog(project)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver detalhes
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openEditDialog(project)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(project.id)} className="text-destructive focus:text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
-                <CardContent className="space-y-3 pl-5">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className={statusColorsMap[project.status] || 'bg-muted/50 text-muted-foreground border-border/50'}>
-                      {statusLabelsMap[project.status] || project.status}
-                    </Badge>
-                    {project.project_type === 'package' && (
-                      <Badge variant="outline" className="bg-violet-500/10 text-violet-400 border-violet-500/30">
-                        <Package className="h-3 w-3 mr-1" />
-                        {project.package_total_arts} artes
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    {project.deadline && (
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Calendar className="h-4 w-4 text-primary/70" />
-                        {format(new Date(project.deadline), 'dd MMM', { locale: ptBR })}
-                      </div>
-                    )}
-                    {project.project_type === 'package' && project.package_total_value ? (
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <DollarSign className="h-4 w-4" />
-                        R$ {project.package_total_value.toLocaleString('pt-BR')}
-                      </div>
-                    ) : (project.budget || project.hourly_rate) ? (
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <DollarSign className="h-4 w-4" />
-                        R$ {project.budget || project.hourly_rate}/h
-                      </div>
-                    ) : null}
-                  </div>
-                </CardContent>
-              </Card>
+            const renderProjectCard = (project: Project, index: number) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                index={index}
+                completedArts={artsProgress[project.id] || 0}
+                onView={openViewDialog}
+                onEdit={openEditDialog}
+                onDelete={handleDelete}
+              />
             );
 
             return (
@@ -959,9 +969,7 @@ export default function Projects() {
                       </Badge>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pl-0 sm:pl-2 border-l-0 sm:border-l-2 border-primary/30">
-                      {group.projects.map((project, index) => (
-                        <ProjectCard key={project.id} project={project} index={index} />
-                      ))}
+                      {group.projects.map((project, index) => renderProjectCard(project, index))}
                     </div>
                   </div>
                 ))}
@@ -978,9 +986,7 @@ export default function Projects() {
                       </div>
                     )}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {standalone.map((project, index) => (
-                        <ProjectCard key={project.id} project={project} index={index} />
-                      ))}
+                      {standalone.map((project, index) => renderProjectCard(project, index))}
                     </div>
                   </>
                 )}
