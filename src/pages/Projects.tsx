@@ -466,27 +466,36 @@ export default function Projects() {
     return matchesSearch && matchesStatus;
   });
 
-  const statusColors: Record<string, string> = {
+  // Import unified status configs from shared lib
+  const statusColorsMap: Record<string, string> = {
     in_progress: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
     pending_approval: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
     paused: 'bg-muted/50 text-muted-foreground border-border/50',
     cancelled: 'bg-red-500/10 text-red-400 border-red-500/30',
+    not_started: 'bg-muted/50 text-muted-foreground border-muted',
+    on_hold: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
   };
 
-  const statusLabels: Record<string, string> = {
+  const statusLabelsMap: Record<string, string> = {
     in_progress: 'Em andamento',
     pending_approval: 'Aguardando aprovação',
     completed: 'Concluído',
     paused: 'Pausado',
     cancelled: 'Cancelado',
+    not_started: 'Não iniciado',
+    on_hold: 'Pausado',
   };
 
-  const priorityColors: Record<string, string> = {
-    low: 'text-muted-foreground',
-    medium: 'text-cyan-400',
-    high: 'text-amber-400',
-    urgent: 'text-red-400',
+  // Accent colors for card left strips (solid colors)
+  const statusAccentColors: Record<string, string> = {
+    not_started: 'bg-muted-foreground',
+    in_progress: 'bg-cyan-400',
+    pending_approval: 'bg-amber-400',
+    on_hold: 'bg-yellow-400',
+    paused: 'bg-muted-foreground',
+    completed: 'bg-emerald-400',
+    cancelled: 'bg-red-400',
   };
 
   return (
@@ -860,11 +869,14 @@ export default function Projects() {
             const ProjectCard = ({ project, index }: { project: Project; index: number }) => (
               <Card 
                 key={project.id} 
-                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-primary/20 hover:border-primary/40 hover:bg-card/80 cursor-pointer active:scale-[0.98]"
+                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-primary/20 hover:border-primary/40 hover:bg-card/80 cursor-pointer active:scale-[0.98] relative overflow-hidden"
                 style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => openViewDialog(project)}
               >
-                <CardHeader className="flex flex-row items-start justify-between pb-2">
+                {/* Status accent strip on left side */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusAccentColors[project.status] || 'bg-muted-foreground'}`} />
+                
+                <CardHeader className="flex flex-row items-start justify-between pb-2 pl-5">
                   <div className="space-y-1 flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{project.name}</CardTitle>
                     {project.clients?.name && (
@@ -896,10 +908,10 @@ export default function Projects() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 pl-5">
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className={statusColors[project.status]}>
-                      {statusLabels[project.status]}
+                    <Badge variant="outline" className={statusColorsMap[project.status] || 'bg-muted/50 text-muted-foreground border-border/50'}>
+                      {statusLabelsMap[project.status] || project.status}
                     </Badge>
                     {project.project_type === 'package' && (
                       <Badge variant="outline" className="bg-violet-500/10 text-violet-400 border-violet-500/30">
