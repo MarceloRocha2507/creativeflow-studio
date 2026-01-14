@@ -11,11 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, FileText, Eye, Clock } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, FileText, Eye, Clock, ChevronDown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Função para formatar texto em Title Case
 const toTitleCase = (text: string): string => {
@@ -1069,14 +1070,22 @@ export default function Projects() {
                               <span className="text-sm">{art.name}</span>
                             </div>
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Badge 
-                                  variant="outline" 
-                                  className="text-xs cursor-pointer hover:bg-white/10 transition-colors"
-                                >
-                                  {artStatusLabels[art.status] || art.status}
-                                </Badge>
-                              </DropdownMenuTrigger>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenuTrigger asChild>
+                                    <Badge 
+                                      variant="outline" 
+                                      className="text-xs cursor-pointer hover:bg-primary/20 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1 group"
+                                    >
+                                      {artStatusLabels[art.status] || art.status}
+                                      <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                    </Badge>
+                                  </DropdownMenuTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  Clique para alterar status
+                                </TooltipContent>
+                              </Tooltip>
                               <DropdownMenuContent align="end" className="glass-card border-white/10">
                                 <DropdownMenuItem onClick={() => updateArtStatus(art.id, 'pending')}>
                                   <div className="w-2 h-2 rounded-full bg-muted-foreground mr-2" />
