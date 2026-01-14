@@ -286,6 +286,26 @@ export default function Projects() {
     }
   };
 
+  const updateArtStatus = async (artId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('project_arts')
+      .update({ status: newStatus })
+      .eq('id', artId);
+      
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao atualizar status', description: error.message });
+      return;
+    }
+    
+    setProjectArts(prev => 
+      prev.map(art => 
+        art.id === artId ? { ...art, status: newStatus } : art
+      )
+    );
+    
+    toast({ title: 'Status atualizado!' });
+  };
+
   const formatTotalTime = (entries: TimeEntry[]) => {
     const totalMinutes = entries.reduce((acc, e) => acc + (e.duration_minutes || 0), 0);
     const hours = Math.floor(totalMinutes / 60);
@@ -1034,7 +1054,7 @@ export default function Projects() {
                       <Package className="h-4 w-4" />
                       Artes do Pacote ({projectArts.length})
                     </h4>
-                    <ScrollArea className="max-h-40 glass rounded-lg border border-white/5">
+                    <ScrollArea className="h-48 glass rounded-lg border border-white/5">
                       <div className="p-3 space-y-2">
                         {projectArts.map(art => (
                           <div key={art.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-white/5">
@@ -1048,9 +1068,34 @@ export default function Projects() {
                               }`} />
                               <span className="text-sm">{art.name}</span>
                             </div>
-                            <Badge variant="outline" className="text-xs">
-                              {artStatusLabels[art.status] || art.status}
-                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs cursor-pointer hover:bg-white/10 transition-colors"
+                                >
+                                  {artStatusLabels[art.status] || art.status}
+                                </Badge>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="glass-card border-white/10">
+                                <DropdownMenuItem onClick={() => updateArtStatus(art.id, 'pending')}>
+                                  <div className="w-2 h-2 rounded-full bg-muted-foreground mr-2" />
+                                  Pendente
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateArtStatus(art.id, 'in_progress')}>
+                                  <div className="w-2 h-2 rounded-full bg-cyan-400 mr-2" />
+                                  Em andamento
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateArtStatus(art.id, 'completed')}>
+                                  <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2" />
+                                  Concluída
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateArtStatus(art.id, 'approved')}>
+                                  <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2" />
+                                  Aprovada
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         ))}
                       </div>
