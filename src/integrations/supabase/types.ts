@@ -279,6 +279,7 @@ export type Database = {
       }
       project_arts: {
         Row: {
+          art_type: string
           created_at: string
           id: string
           name: string
@@ -289,6 +290,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          art_type?: string
           created_at?: string
           id?: string
           name: string
@@ -299,6 +301,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          art_type?: string
           created_at?: string
           id?: string
           name?: string
