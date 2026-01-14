@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
+import ClientDetails from "./pages/ClientDetails";
 import Projects from "./pages/Projects";
 import TimeTracking from "./pages/TimeTracking";
 import Tasks from "./pages/Tasks";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+            <Route path="/clients/:id" element={<ProtectedRoute><ClientDetails /></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
             <Route path="/time-tracking" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
