@@ -234,8 +234,14 @@ export default function Projects() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Only submit on last step
+    if (formStep !== 3) {
+      setFormStep(s => s + 1);
+      return;
+    }
+    
     if (!user) return;
-
     // For package projects, auto-generate name if empty
     const clientName = clients.find(c => c.id === clientId)?.name || 'Cliente';
     const projectName = projectType === 'package' && !name 
