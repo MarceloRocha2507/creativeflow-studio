@@ -119,7 +119,7 @@ export default function Projects() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<'created' | 'deadline' | 'priority' | 'name' | 'value'>('created');
+  const [sortBy, setSortBy] = useState<'created' | 'deadline' | 'priority' | 'name' | 'value'>('priority');
   const [artsProgress, setArtsProgress] = useState<Record<string, number>>({});
   
   // View details state
