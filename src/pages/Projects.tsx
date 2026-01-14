@@ -835,8 +835,9 @@ export default function Projects() {
             const ProjectCard = ({ project, index }: { project: Project; index: number }) => (
               <Card 
                 key={project.id} 
-                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10"
+                className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
                 style={{ animationDelay: `${index * 50}ms` }}
+                onClick={() => openViewDialog(project)}
               >
                 <CardHeader className="flex flex-row items-start justify-between pb-2">
                   <div className="space-y-1 flex-1 min-w-0">
@@ -849,7 +850,7 @@ export default function Projects() {
                     )}
                   </div>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
