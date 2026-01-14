@@ -72,7 +72,16 @@ interface TimeEntry {
   description: string | null;
 }
 
+// Mapa de prioridades para ordenação
+const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+
+// Função de ordenação por prioridade
+const sortByPriority = (a: Project, b: Project): number => {
+  return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+};
+
 // Agrupa projetos por cliente - apenas clientes com 2+ projetos são agrupados
+// IMPORTANTE: Preserva a ordenação por prioridade em todos os grupos
 const groupProjectsByClient = (projects: Project[]): { clientGroups: ClientGroup[]; standalone: Project[] } => {
   const groups: Record<string, Project[]> = {};
   const standalone: Project[] = [];
@@ -94,6 +103,8 @@ const groupProjectsByClient = (projects: Project[]): { clientGroups: ClientGroup
 
   Object.entries(groups).forEach(([clientId, clientProjects]) => {
     if (clientProjects.length >= 2) {
+      // Ordenar projetos dentro do grupo por prioridade
+      clientProjects.sort(sortByPriority);
       clientGroups.push({
         clientId,
         clientName: clientProjects[0].clients?.name || 'Cliente',
@@ -104,8 +115,15 @@ const groupProjectsByClient = (projects: Project[]): { clientGroups: ClientGroup
     }
   });
 
-  // Ordenar grupos por nome do cliente
-  clientGroups.sort((a, b) => a.clientName.localeCompare(b.clientName));
+  // Ordenar standalone por prioridade
+  standalone.sort(sortByPriority);
+
+  // Ordenar grupos pelo projeto de maior prioridade dentro de cada grupo
+  clientGroups.sort((a, b) => {
+    const aPriority = Math.min(...a.projects.map(p => priorityOrder[p.priority] ?? 2));
+    const bPriority = Math.min(...b.projects.map(p => priorityOrder[p.priority] ?? 2));
+    return aPriority - bPriority;
+  });
 
   return { clientGroups, standalone };
 };
