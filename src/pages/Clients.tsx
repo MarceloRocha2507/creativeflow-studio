@@ -14,8 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Plus, Search, Users, Building2, Mail, Phone, MoreVertical, Pencil, Trash2,
-  MapPin, Target, Calendar, Clock, MessageSquare, User, Briefcase, Tag,
-  Package, ExternalLink, Calculator
+  MapPin, Target, Calendar, Clock, MessageSquare, User, Briefcase, Tag
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format, isToday, isPast, parseISO } from 'date-fns';
@@ -42,9 +41,6 @@ interface Client {
   main_interest: string | null;
   product_service_interest: string | null;
   next_followup_date: string | null;
-  package_total_value: number | null;
-  package_total_arts: number | null;
-  google_drive_link: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -142,21 +138,6 @@ export default function Clients() {
   const [productServiceInterest, setProductServiceInterest] = useState('');
   const [nextFollowupDate, setNextFollowupDate] = useState('');
   const [status, setStatus] = useState('active');
-  
-  // Form state - Package fields
-  const [packageTotalValue, setPackageTotalValue] = useState('');
-  const [packageTotalArts, setPackageTotalArts] = useState('');
-  const [googleDriveLink, setGoogleDriveLink] = useState('');
-  
-  // Calculated unit value
-  const calculatedUnitValue = (() => {
-    const total = parseFloat(packageTotalValue);
-    const arts = parseInt(packageTotalArts);
-    if (total > 0 && arts > 0) {
-      return total / arts;
-    }
-    return 0;
-  })();
 
   useEffect(() => {
     fetchClients();
@@ -198,9 +179,6 @@ export default function Clients() {
     setProductServiceInterest('');
     setNextFollowupDate('');
     setStatus('active');
-    setPackageTotalValue('');
-    setPackageTotalArts('');
-    setGoogleDriveLink('');
     setEditingClient(null);
   };
 
@@ -225,9 +203,6 @@ export default function Clients() {
     setProductServiceInterest(client.product_service_interest || '');
     setNextFollowupDate(client.next_followup_date || '');
     setStatus(client.status);
-    setPackageTotalValue(client.package_total_value?.toString() || '');
-    setPackageTotalArts(client.package_total_arts?.toString() || '');
-    setGoogleDriveLink(client.google_drive_link || '');
     setIsDialogOpen(true);
   };
 
@@ -266,9 +241,6 @@ export default function Clients() {
       product_service_interest: productServiceInterest.trim() || null,
       next_followup_date: nextFollowupDate || null,
       status,
-      package_total_value: packageTotalValue ? parseFloat(packageTotalValue) : null,
-      package_total_arts: packageTotalArts ? parseInt(packageTotalArts) : null,
-      google_drive_link: googleDriveLink.trim() || null,
     };
 
     if (editingClient) {
@@ -499,72 +471,6 @@ export default function Clients() {
                   )}
                 </FormSection>
 
-                {/* Section 5: Pacote Comercial */}
-                <FormSection icon={<Package className="h-4 w-4" />} title="PACOTE COMERCIAL">
-                  <div className="space-y-2">
-                    <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$)</Label>
-                    <Input 
-                      id="packageTotalValue" 
-                      type="number" 
-                      step="0.01"
-                      min="0"
-                      value={packageTotalValue} 
-                      onChange={(e) => setPackageTotalValue(e.target.value)} 
-                      className="glass border-white/10" 
-                      placeholder="0,00" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="packageTotalArts">Número Total de Artes</Label>
-                    <Input 
-                      id="packageTotalArts" 
-                      type="number" 
-                      min="1"
-                      value={packageTotalArts} 
-                      onChange={(e) => setPackageTotalArts(e.target.value)} 
-                      className="glass border-white/10" 
-                      placeholder="0" 
-                    />
-                  </div>
-                  {calculatedUnitValue > 0 && (
-                    <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
-                      <div className="flex items-center gap-2 text-primary">
-                        <Calculator className="h-4 w-4" />
-                        <span className="text-sm font-medium">Valor por Arte:</span>
-                        <span className="text-lg font-bold">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculatedUnitValue)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
-                    </div>
-                  )}
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="googleDriveLink">Link do Google Drive</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        id="googleDriveLink" 
-                        type="url"
-                        value={googleDriveLink} 
-                        onChange={(e) => setGoogleDriveLink(e.target.value)} 
-                        className="glass border-white/10 flex-1" 
-                        placeholder="https://drive.google.com/drive/folders/..." 
-                      />
-                      {googleDriveLink && (
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="icon"
-                          className="glass border-white/10 shrink-0"
-                          onClick={() => window.open(googleDriveLink, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Logos, imagens e materiais de identidade visual</p>
-                  </div>
-                </FormSection>
-
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
                     Cancelar
@@ -708,30 +614,10 @@ export default function Clients() {
                         </span>
                       </div>
                     )}
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <div className="flex items-center gap-2 pt-1">
                       <Badge variant="outline" className={statusColors[client.status]}>
                         {statusLabels[client.status]}
                       </Badge>
-                      {client.package_total_value && client.package_total_arts && (
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                          <Package className="h-3 w-3 mr-1" />
-                          Pacote Fechado
-                        </Badge>
-                      )}
-                      {client.google_drive_link && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs text-primary hover:text-primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(client.google_drive_link!, '_blank');
-                          }}
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Drive
-                        </Button>
-                      )}
                     </div>
                   </CardContent>
                 </Card>

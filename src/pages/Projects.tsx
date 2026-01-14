@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -34,6 +34,9 @@ interface Project {
   start_date: string | null;
   deadline: string | null;
   client_id: string | null;
+  package_total_value: number | null;
+  package_total_arts: number | null;
+  google_drive_link: string | null;
   created_at: string;
   clients?: { name: string } | null;
 }
@@ -104,6 +107,21 @@ export default function Projects() {
   const [hourlyRate, setHourlyRate] = useState('');
   const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
+  
+  // Package form state
+  const [packageTotalValue, setPackageTotalValue] = useState('');
+  const [packageTotalArts, setPackageTotalArts] = useState('');
+  const [googleDriveLink, setGoogleDriveLink] = useState('');
+  
+  // Calculated unit value
+  const calculatedUnitValue = (() => {
+    const total = parseFloat(packageTotalValue);
+    const arts = parseInt(packageTotalArts);
+    if (total > 0 && arts > 0) {
+      return total / arts;
+    }
+    return 0;
+  })();
 
   useEffect(() => {
     fetchData();
@@ -141,6 +159,9 @@ export default function Projects() {
     setHourlyRate('');
     setStartDate('');
     setDeadline('');
+    setPackageTotalValue('');
+    setPackageTotalArts('');
+    setGoogleDriveLink('');
     setEditingProject(null);
   };
 
@@ -156,6 +177,9 @@ export default function Projects() {
     setHourlyRate(project.hourly_rate?.toString() || '');
     setStartDate(project.start_date || '');
     setDeadline(project.deadline || '');
+    setPackageTotalValue(project.package_total_value?.toString() || '');
+    setPackageTotalArts(project.package_total_arts?.toString() || '');
+    setGoogleDriveLink(project.google_drive_link || '');
     setIsDialogOpen(true);
   };
 
@@ -175,6 +199,9 @@ export default function Projects() {
       hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
       start_date: startDate || null,
       deadline: deadline || null,
+      package_total_value: packageTotalValue ? parseFloat(packageTotalValue) : null,
+      package_total_arts: packageTotalArts ? parseInt(packageTotalArts) : null,
+      google_drive_link: googleDriveLink.trim() || null,
     };
 
     if (editingProject) {
@@ -334,6 +361,76 @@ export default function Projects() {
                     <Label htmlFor="deadline">Prazo</Label>
                     <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
                   </div>
+                  
+                  {/* Package Section */}
+                  <div className="sm:col-span-2 pt-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-primary mb-3">
+                      <Package className="h-4 w-4" />
+                      <span>PACOTE COMERCIAL</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$)</Label>
+                    <Input 
+                      id="packageTotalValue" 
+                      type="number" 
+                      step="0.01"
+                      min="0"
+                      value={packageTotalValue} 
+                      onChange={(e) => setPackageTotalValue(e.target.value)} 
+                      className="glass border-white/10" 
+                      placeholder="0,00" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="packageTotalArts">Número Total de Artes</Label>
+                    <Input 
+                      id="packageTotalArts" 
+                      type="number" 
+                      min="1"
+                      value={packageTotalArts} 
+                      onChange={(e) => setPackageTotalArts(e.target.value)} 
+                      className="glass border-white/10" 
+                      placeholder="0" 
+                    />
+                  </div>
+                  {calculatedUnitValue > 0 && (
+                    <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Calculator className="h-4 w-4" />
+                        <span className="text-sm font-medium">Valor por Arte:</span>
+                        <span className="text-lg font-bold">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculatedUnitValue)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
+                    </div>
+                  )}
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="googleDriveLink">Link do Google Drive</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        id="googleDriveLink" 
+                        type="url"
+                        value={googleDriveLink} 
+                        onChange={(e) => setGoogleDriveLink(e.target.value)} 
+                        className="glass border-white/10 flex-1" 
+                        placeholder="https://drive.google.com/drive/folders/..." 
+                      />
+                      {googleDriveLink && (
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="icon"
+                          className="glass border-white/10 shrink-0"
+                          onClick={() => window.open(googleDriveLink, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
@@ -428,6 +525,26 @@ export default function Projects() {
                     <Badge variant="outline" className={statusColors[project.status]}>
                       {statusLabels[project.status]}
                     </Badge>
+                    {project.package_total_value && project.package_total_arts && (
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                        <Package className="h-3 w-3 mr-1" />
+                        Pacote
+                      </Badge>
+                    )}
+                    {project.google_drive_link && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs text-primary hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(project.google_drive_link!, '_blank');
+                        }}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Drive
+                      </Button>
+                    )}
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     {project.deadline && (
