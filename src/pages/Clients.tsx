@@ -50,6 +50,7 @@ const ORIGIN_OPTIONS = [
   { value: 'facebook', label: 'Facebook' },
   { value: 'google', label: 'Google' },
   { value: 'tiktok', label: 'TikTok' },
+  { value: 'discord', label: 'Discord' },
   { value: 'indicacao_cliente', label: 'Indicação de Cliente' },
   { value: 'indicacao_parceiro', label: 'Indicação de Parceiro' },
   { value: 'linkedin', label: 'LinkedIn' },
