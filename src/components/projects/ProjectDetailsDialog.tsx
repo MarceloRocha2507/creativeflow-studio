@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
@@ -13,6 +12,14 @@ import {
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { 
+  statusColors, 
+  statusLabels, 
+  priorityColors, 
+  priorityLabels, 
+  artStatusLabels,
+  artStatusColors 
+} from '@/lib/projectStatus';
 
 interface Project {
   id: string;
@@ -59,43 +66,6 @@ interface ProjectDetailsDialogProps {
   onUpdateArtStatus: (artId: string, status: string) => void;
   onUpdateProjectStatus: (status: string) => void;
 }
-
-const statusColors: Record<string, string> = {
-  not_started: 'bg-muted/50 text-muted-foreground border-muted',
-  in_progress: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
-  on_hold: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
-  completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  cancelled: 'bg-red-500/10 text-red-400 border-red-500/30',
-};
-
-const statusLabels: Record<string, string> = {
-  not_started: 'Não Iniciado',
-  in_progress: 'Em Andamento',
-  on_hold: 'Pausado',
-  completed: 'Concluído',
-  cancelled: 'Cancelado',
-};
-
-const priorityColors: Record<string, string> = {
-  low: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-  medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
-  high: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
-  urgent: 'bg-red-500/10 text-red-400 border-red-500/30',
-};
-
-const priorityLabels: Record<string, string> = {
-  low: 'Baixa',
-  medium: 'Média',
-  high: 'Alta',
-  urgent: 'Urgente',
-};
-
-const artStatusLabels: Record<string, string> = {
-  pending: 'Pendente',
-  in_progress: 'Em andamento',
-  completed: 'Concluída',
-  approved: 'Aprovada',
-};
 
 const formatTotalTime = (entries: TimeEntry[]): string => {
   const totalMinutes = entries.reduce((acc, entry) => acc + (entry.duration_minutes || 0), 0);
@@ -288,8 +258,8 @@ export function ProjectDetailsDialog({
         ) : (
           <>
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-              <TabsList className="mx-6 mt-4 w-fit bg-muted/30 border border-white/5">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <TabsList className="mx-6 mt-4 w-fit bg-muted/30 border border-white/5 shrink-0">
                 <TabsTrigger value="overview" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Eye className="h-4 w-4 mr-2" />
                   Visão Geral
@@ -311,7 +281,8 @@ export function ProjectDetailsDialog({
                 </TabsTrigger>
               </TabsList>
 
-              <ScrollArea className="flex-1 max-h-[50vh] px-6 py-4">
+              {/* Scrollable content area - native scroll */}
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-4">
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="mt-0 space-y-4 animate-fade-in">
                   {/* Description */}
@@ -432,9 +403,12 @@ export function ProjectDetailsDialog({
                       {filteredArts.map(art => (
                         <div 
                           key={art.id} 
-                          className="glass rounded-lg p-3 border border-white/5 flex items-center justify-between hover:border-white/10 transition-colors"
+                          className="glass rounded-lg p-3 border border-white/5 flex items-center justify-between hover:border-white/10 transition-colors relative overflow-hidden"
                         >
-                          <div className="flex items-center gap-3">
+                          {/* Status accent strip */}
+                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${artStatusColors[art.status] || 'bg-muted-foreground'}`} />
+                          
+                          <div className="flex items-center gap-3 pl-2">
                             <div className={`w-3 h-3 rounded-full transition-colors ${
                               art.status === 'completed' || art.status === 'approved' 
                                 ? 'bg-emerald-400' 
@@ -539,7 +513,7 @@ export function ProjectDetailsDialog({
                     )}
                   </div>
                 </TabsContent>
-              </ScrollArea>
+              </div>
             </Tabs>
 
             {/* Footer Actions */}
