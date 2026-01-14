@@ -108,6 +108,9 @@ export default function Projects() {
   const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
   
+  // Project type state
+  const [projectType, setProjectType] = useState<'single' | 'package'>('single');
+  
   // Package form state
   const [packageTotalValue, setPackageTotalValue] = useState('');
   const [packageTotalArts, setPackageTotalArts] = useState('');
@@ -162,6 +165,7 @@ export default function Projects() {
     setPackageTotalValue('');
     setPackageTotalArts('');
     setGoogleDriveLink('');
+    setProjectType('single');
     setEditingProject(null);
   };
 
@@ -180,6 +184,12 @@ export default function Projects() {
     setPackageTotalValue(project.package_total_value?.toString() || '');
     setPackageTotalArts(project.package_total_arts?.toString() || '');
     setGoogleDriveLink(project.google_drive_link || '');
+    // Detectar tipo baseado nos dados existentes
+    if (project.package_total_value || project.package_total_arts) {
+      setProjectType('package');
+    } else {
+      setProjectType('single');
+    }
     setIsDialogOpen(true);
   };
 
@@ -190,18 +200,19 @@ export default function Projects() {
     const projectData = {
       user_id: user.id,
       name,
-      description: description || null,
+      description: projectType === 'single' ? (description || null) : null,
       client_id: clientId || null,
       status,
       priority,
-      billing_type: billingType,
-      budget: budget ? parseFloat(budget) : null,
-      hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-      start_date: startDate || null,
-      deadline: deadline || null,
-      package_total_value: packageTotalValue ? parseFloat(packageTotalValue) : null,
-      package_total_arts: packageTotalArts ? parseInt(packageTotalArts) : null,
-      google_drive_link: googleDriveLink.trim() || null,
+      project_type: projectType,
+      billing_type: projectType === 'single' ? billingType : 'fixed',
+      budget: projectType === 'single' && budget ? parseFloat(budget) : null,
+      hourly_rate: projectType === 'single' && hourlyRate ? parseFloat(hourlyRate) : null,
+      start_date: projectType === 'single' && startDate ? startDate : null,
+      deadline: projectType === 'single' && deadline ? deadline : null,
+      package_total_value: projectType === 'package' && packageTotalValue ? parseFloat(packageTotalValue) : null,
+      package_total_arts: projectType === 'package' && packageTotalArts ? parseInt(packageTotalArts) : null,
+      google_drive_link: projectType === 'package' && googleDriveLink.trim() ? googleDriveLink.trim() : null,
     };
 
     if (editingProject) {
@@ -288,14 +299,46 @@ export default function Projects() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
+                  {/* Seletor de Tipo de Projeto - PRIMEIRO CAMPO */}
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label>Tipo de Projeto *</Label>
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant={projectType === 'single' ? 'default' : 'outline'}
+                        onClick={() => setProjectType('single')}
+                        className={projectType === 'single' ? 'gradient-primary flex-1' : 'glass border-white/10 flex-1'}
+                      >
+                        <FolderKanban className="h-4 w-4 mr-2" />
+                        Projeto Avulso
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant={projectType === 'package' ? 'default' : 'outline'}
+                        onClick={() => setProjectType('package')}
+                        className={projectType === 'package' ? 'gradient-primary flex-1' : 'glass border-white/10 flex-1'}
+                      >
+                        <Package className="h-4 w-4 mr-2" />
+                        Pacote de Artes
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Campos comuns */}
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="name">Nome do Projeto *</Label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="glass border-white/10" />
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="glass border-white/10" />
-                  </div>
+                  
+                  {/* Descrição - apenas Projeto Avulso */}
+                  {projectType === 'single' && (
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="description">Descrição</Label>
+                      <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="glass border-white/10" />
+                    </div>
+                  )}
+
+                  {/* Cliente - comum */}
                   <div className="space-y-2">
                     <Label htmlFor="client">Cliente</Label>
                     <Select value={clientId} onValueChange={setClientId}>
@@ -307,6 +350,8 @@ export default function Projects() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Status - comum */}
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
                     <Select value={status} onValueChange={setStatus}>
@@ -320,6 +365,8 @@ export default function Projects() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Prioridade - comum */}
                   <div className="space-y-2">
                     <Label htmlFor="priority">Prioridade</Label>
                     <Select value={priority} onValueChange={setPriority}>
@@ -332,105 +379,111 @@ export default function Projects() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="billingType">Tipo de Cobrança</Label>
-                    <Select value={billingType} onValueChange={setBillingType}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        <SelectItem value="fixed">Valor Fixo</SelectItem>
-                        <SelectItem value="hourly">Por Hora</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {billingType === 'fixed' ? (
-                    <div className="space-y-2">
-                      <Label htmlFor="budget">Valor do Projeto (R$)</Label>
-                      <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
-                      <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Data de Início</Label>
-                    <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="glass border-white/10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deadline">Prazo</Label>
-                    <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
-                  </div>
-                  
-                  {/* Package Section */}
-                  <div className="sm:col-span-2 pt-2">
-                    <div className="flex items-center gap-2 text-sm font-medium text-primary mb-3">
-                      <Package className="h-4 w-4" />
-                      <span>PACOTE COMERCIAL</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$)</Label>
-                    <Input 
-                      id="packageTotalValue" 
-                      type="number" 
-                      step="0.01"
-                      min="0"
-                      value={packageTotalValue} 
-                      onChange={(e) => setPackageTotalValue(e.target.value)} 
-                      className="glass border-white/10" 
-                      placeholder="0,00" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="packageTotalArts">Número Total de Artes</Label>
-                    <Input 
-                      id="packageTotalArts" 
-                      type="number" 
-                      min="1"
-                      value={packageTotalArts} 
-                      onChange={(e) => setPackageTotalArts(e.target.value)} 
-                      className="glass border-white/10" 
-                      placeholder="0" 
-                    />
-                  </div>
-                  {calculatedUnitValue > 0 && (
-                    <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
-                      <div className="flex items-center gap-2 text-primary">
-                        <Calculator className="h-4 w-4" />
-                        <span className="text-sm font-medium">Valor por Arte:</span>
-                        <span className="text-lg font-bold">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculatedUnitValue)}
-                        </span>
+
+                  {/* Campos específicos - Projeto Avulso */}
+                  {projectType === 'single' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="billingType">Tipo de Cobrança</Label>
+                        <Select value={billingType} onValueChange={setBillingType}>
+                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                          <SelectContent className="glass-card border-white/10">
+                            <SelectItem value="fixed">Valor Fixo</SelectItem>
+                            <SelectItem value="hourly">Por Hora</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
-                    </div>
-                  )}
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="googleDriveLink">Link do Google Drive</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        id="googleDriveLink" 
-                        type="url"
-                        value={googleDriveLink} 
-                        onChange={(e) => setGoogleDriveLink(e.target.value)} 
-                        className="glass border-white/10 flex-1" 
-                        placeholder="https://drive.google.com/drive/folders/..." 
-                      />
-                      {googleDriveLink && (
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="icon"
-                          className="glass border-white/10 shrink-0"
-                          onClick={() => window.open(googleDriveLink, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
+                      {billingType === 'fixed' ? (
+                        <div className="space-y-2">
+                          <Label htmlFor="budget">Valor do Projeto (R$)</Label>
+                          <Input id="budget" type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="glass border-white/10" />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Label htmlFor="hourlyRate">Valor/Hora (R$)</Label>
+                          <Input id="hourlyRate" type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="glass border-white/10" />
+                        </div>
                       )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate">Data de Início</Label>
+                        <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="glass border-white/10" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="deadline">Prazo</Label>
+                        <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="glass border-white/10" />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Campos específicos - Pacote de Artes */}
+                  {projectType === 'package' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$) *</Label>
+                        <Input 
+                          id="packageTotalValue" 
+                          type="number" 
+                          step="0.01"
+                          min="0"
+                          value={packageTotalValue} 
+                          onChange={(e) => setPackageTotalValue(e.target.value)} 
+                          className="glass border-white/10" 
+                          placeholder="0,00"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="packageTotalArts">Número Total de Artes *</Label>
+                        <Input 
+                          id="packageTotalArts" 
+                          type="number" 
+                          min="1"
+                          value={packageTotalArts} 
+                          onChange={(e) => setPackageTotalArts(e.target.value)} 
+                          className="glass border-white/10" 
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                      {calculatedUnitValue > 0 && (
+                        <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
+                          <div className="flex items-center gap-2 text-primary">
+                            <Calculator className="h-4 w-4" />
+                            <span className="text-sm font-medium">Valor por Arte:</span>
+                            <span className="text-lg font-bold">
+                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculatedUnitValue)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
+                        </div>
+                      )}
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="googleDriveLink">Link do Google Drive</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            id="googleDriveLink" 
+                            type="url"
+                            value={googleDriveLink} 
+                            onChange={(e) => setGoogleDriveLink(e.target.value)} 
+                            className="glass border-white/10 flex-1" 
+                            placeholder="https://drive.google.com/..." 
+                          />
+                          {googleDriveLink && (
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="icon"
+                              className="glass border-white/10 shrink-0"
+                              onClick={() => window.open(googleDriveLink, '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">
