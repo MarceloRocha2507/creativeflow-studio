@@ -147,13 +147,17 @@ export function MobileNav() {
     count?: number
   ) => {
     const Icon = icon;
+    // Quando expandido, não mostra fundo ativo para evitar sobreposição com sub-items
+    const showActiveStyle = isActive && !isOpen;
     return (
       <div
         className={cn(
           'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer',
-          isActive
+          showActiveStyle
             ? 'bg-primary/10 text-primary'
-            : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+            : isActive && isOpen
+              ? 'text-primary hover:bg-sidebar-accent'
+              : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
         )}
       >
         <Icon className={cn('h-5 w-5', isActive && 'text-primary')} />
@@ -205,7 +209,7 @@ export function MobileNav() {
                   <CollapsibleTrigger className="w-full p-0 text-left">
                     {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive, projectsCount)}
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-1 overflow-hidden">
+                  <CollapsibleContent className="mt-1 space-y-1 overflow-hidden">
                     {projectsNavigation.map((item, index) => {
                       const itemCount = item.href === '/projects' ? projectsCount : item.href === '/tasks' ? tasksCount : undefined;
                       return renderNavItem(item, true, index, itemCount);
@@ -224,7 +228,7 @@ export function MobileNav() {
                   <CollapsibleTrigger className="w-full p-0 text-left">
                     {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive, unreadNotifications)}
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-1 overflow-hidden">
+                  <CollapsibleContent className="mt-1 space-y-1 overflow-hidden">
                     {settingsNavigation.map((item, index) => {
                       const itemCount = item.href === '/notifications' ? unreadNotifications : undefined;
                       return renderNavItem(item, true, index, itemCount);
