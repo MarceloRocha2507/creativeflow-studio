@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,11 +12,20 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator, Image, CheckCircle2, Settings } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, DollarSign, MoreVertical, Pencil, Trash2, User, Users, Package, ExternalLink, Calculator, Image, Settings } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArtManagementModal, ART_TYPES, generateArtNames } from '@/components/projects/ArtManagementModal';
+import { ArtManagementModal, ART_TYPES } from '@/components/projects/ArtManagementModal';
+
+// Função para formatar texto em Title Case
+const toTitleCase = (text: string): string => {
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 interface Client {
   id: string;
@@ -132,8 +141,10 @@ export default function Projects() {
   const [isArtModalOpen, setIsArtModalOpen] = useState(false);
   const [selectedProjectForArts, setSelectedProjectForArts] = useState<Project | null>(null);
   
-  // Estado para nomes editáveis das artes no preview
-  const [customArtNames, setCustomArtNames] = useState<string[]>([]);
+  // Condição para mostrar campos de nomeação no pacote
+  const showNamingFields = projectType === 'package' 
+    ? parseInt(packageTotalArts) > 0 
+    : true;
   
   // Calculated unit value
   const calculatedUnitValue = (() => {
@@ -203,7 +214,6 @@ export default function Projects() {
     setDefaultArtType('feed');
     setProjectType('single');
     setEditingProject(null);
-    setCustomArtNames([]);
   };
 
   const openEditDialog = (project: Project) => {
@@ -230,35 +240,6 @@ export default function Projects() {
     setIsDialogOpen(true);
   };
 
-  // Gerar nomes padrão das artes e sincronizar com customArtNames
-  useEffect(() => {
-    if (projectType === 'package' && name && packageTotalArts) {
-      const total = parseInt(packageTotalArts);
-      if (total > 0 && total <= 100) {
-        const defaultNames = generateArtNames(name, defaultArtType, total);
-        // Só atualiza se o número de artes mudou ou se está vazio
-        if (customArtNames.length !== total) {
-          // Mantém nomes customizados existentes e adiciona novos
-          const newNames = defaultNames.map((defaultName, index) => {
-            if (index < customArtNames.length && customArtNames[index] !== '') {
-              return customArtNames[index];
-            }
-            return defaultName;
-          });
-          setCustomArtNames(newNames);
-        }
-      }
-    } else {
-      setCustomArtNames([]);
-    }
-  }, [projectType, name, packageTotalArts, defaultArtType]);
-
-  // Handler para atualizar nome de arte individual
-  const handleArtNameChange = (index: number, newName: string) => {
-    const updated = [...customArtNames];
-    updated[index] = newName;
-    setCustomArtNames(updated);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -336,17 +317,22 @@ export default function Projects() {
         return;
       }
 
-      // Criar artes automaticamente para pacotes
+      // Criar artes automaticamente para pacotes - gerar nomes ao salvar
       if (projectType === 'package' && packageTotalArts && newProject) {
-        // Usar nomes customizados se disponíveis
-        const artsToInsert = customArtNames.map((artName, index) => ({
-          project_id: newProject.id,
-          user_id: user.id,
-          name: artName,
-          order_index: index + 1,
-          status: 'pending',
-          art_type: defaultArtType,
-        }));
+        const total = parseInt(packageTotalArts);
+        const typeLabel = ART_TYPES.find(t => t.value === defaultArtType)?.label || 'Feed';
+        
+        const artsToInsert = Array.from({ length: total }, (_, index) => {
+          const artNumber = String(index + 1).padStart(2, '0');
+          return {
+            project_id: newProject.id,
+            user_id: user.id,
+            name: `${name} - ${typeLabel} - Arte ${artNumber}`,
+            order_index: index + 1,
+            status: 'pending',
+            art_type: defaultArtType,
+          };
+        });
 
         const { error: artsError } = await supabase.from('project_arts').insert(artsToInsert);
         if (artsError) {
@@ -447,11 +433,20 @@ export default function Projects() {
                     </div>
                   </div>
 
-                  {/* Campos comuns */}
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="name">Nome do Projeto *</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="glass border-white/10" />
-                  </div>
+                  {/* Nome do Projeto - condicional para pacote */}
+                  {(projectType === 'single' || showNamingFields) && (
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="name">Nome do Projeto *</Label>
+                      <Input 
+                        id="name" 
+                        value={name} 
+                        onChange={(e) => setName(toTitleCase(e.target.value))} 
+                        required 
+                        className="glass border-white/10" 
+                        placeholder="Digite o nome..."
+                      />
+                    </div>
+                  )}
                   
                   {/* Descrição - apenas Projeto Avulso */}
                   {projectType === 'single' && (
@@ -461,47 +456,49 @@ export default function Projects() {
                     </div>
                   )}
 
-                  {/* Cliente - comum */}
-                  <div className="space-y-2">
-                    <Label htmlFor="client">Cliente</Label>
-                    <Select value={clientId} onValueChange={setClientId}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        {clients.map(client => (
-                          <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Cliente, Status, Prioridade - condicionais para pacote */}
+                  {(projectType === 'single' || showNamingFields) && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="client">Cliente</Label>
+                        <Select value={clientId} onValueChange={setClientId}>
+                          <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                          <SelectContent className="glass-card border-white/10">
+                            {clients.map(client => (
+                              <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  {/* Status - comum */}
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        <SelectItem value="in_progress">Em andamento</SelectItem>
-                        <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                        <SelectItem value="paused">Pausado</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select value={status} onValueChange={setStatus}>
+                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                          <SelectContent className="glass-card border-white/10">
+                            <SelectItem value="in_progress">Em andamento</SelectItem>
+                            <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
+                            <SelectItem value="completed">Concluído</SelectItem>
+                            <SelectItem value="paused">Pausado</SelectItem>
+                            <SelectItem value="cancelled">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  {/* Prioridade - comum */}
-                  <div className="space-y-2">
-                    <Label htmlFor="priority">Prioridade</Label>
-                    <Select value={priority} onValueChange={setPriority}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
-                        <SelectItem value="low">Baixa</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
-                        <SelectItem value="urgent">Urgente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="priority">Prioridade</Label>
+                        <Select value={priority} onValueChange={setPriority}>
+                          <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
+                          <SelectContent className="glass-card border-white/10">
+                            <SelectItem value="low">Baixa</SelectItem>
+                            <SelectItem value="medium">Média</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                            <SelectItem value="urgent">Urgente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
 
                   {/* Campos específicos - Projeto Avulso */}
                   {projectType === 'single' && (
@@ -541,6 +538,7 @@ export default function Projects() {
                   {/* Campos específicos - Pacote de Artes */}
                   {projectType === 'package' && (
                     <>
+                      {/* Campos iniciais - sempre visíveis */}
                       <div className="space-y-2">
                         <Label htmlFor="packageTotalValue">Valor Total do Pacote (R$) *</Label>
                         <Input 
@@ -568,86 +566,87 @@ export default function Projects() {
                           required
                         />
                       </div>
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="defaultArtType">Tipo de Arte Padrão</Label>
-                        <Select value={defaultArtType} onValueChange={setDefaultArtType}>
-                          <SelectTrigger className="glass border-white/10">
-                            <SelectValue placeholder="Selecione o tipo..." />
-                          </SelectTrigger>
-                          <SelectContent className="glass-card border-white/10">
-                            {ART_TYPES.map(type => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">O tipo pode ser alterado individualmente após criar</p>
-                      </div>
-                      {calculatedUnitValue > 0 && (
-                        <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
-                          <div className="flex items-center gap-2 text-primary">
-                            <Calculator className="h-4 w-4" />
-                            <span className="text-sm font-medium">Valor por Arte:</span>
-                            <span className="text-lg font-bold">
-                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculatedUnitValue)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
-                        </div>
-                      )}
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="googleDriveLink">Link do Google Drive</Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            id="googleDriveLink" 
-                            type="url"
-                            value={googleDriveLink} 
-                            onChange={(e) => setGoogleDriveLink(e.target.value)} 
-                            className="glass border-white/10 flex-1" 
-                            placeholder="https://drive.google.com/..." 
-                          />
-                          {googleDriveLink && (
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              size="icon"
-                              className="glass border-white/10 shrink-0"
-                              onClick={() => window.open(googleDriveLink, '_blank')}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
-                      </div>
 
-                      {/* Preview das artes - editável */}
-                      {customArtNames.length > 0 && (
-                        <div className="sm:col-span-2 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Image className="h-4 w-4 text-primary" />
-                            <Label className="text-primary font-medium">Artes do Pacote ({customArtNames.length})</Label>
-                          </div>
-                          <div className="p-3 rounded-lg glass border border-white/10 max-h-60 overflow-y-auto space-y-2">
-                            {customArtNames.map((artName, index) => (
-                              <div key={index} className="flex items-center gap-2">
-                                <span className="w-6 h-6 flex items-center justify-center text-xs font-medium text-muted-foreground bg-white/5 rounded shrink-0">
-                                  {String(index + 1).padStart(2, '0')}
-                                </span>
-                                <Input
-                                  value={artName}
-                                  onChange={(e) => handleArtNameChange(index, e.target.value)}
-                                  className="glass border-white/10 h-8 text-sm flex-1"
-                                  placeholder={`Arte ${String(index + 1).padStart(2, '0')}`}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            💡 Edite os nomes acima se precisar. As artes serão criadas ao salvar.
+                      {/* Mensagem guia quando número de artes não foi preenchido */}
+                      {!showNamingFields && (
+                        <div className="sm:col-span-2 p-4 rounded-lg glass border border-white/10 text-center">
+                          <p className="text-sm text-muted-foreground">
+                            💡 Informe o número de artes para continuar
                           </p>
                         </div>
+                      )}
+
+                      {/* Campos que aparecem após preencher número de artes */}
+                      {showNamingFields && (
+                        <>
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="defaultArtType">Tipo de Arte Padrão</Label>
+                            <Select value={defaultArtType} onValueChange={setDefaultArtType}>
+                              <SelectTrigger className="glass border-white/10">
+                                <SelectValue placeholder="Selecione o tipo..." />
+                              </SelectTrigger>
+                              <SelectContent className="glass-card border-white/10">
+                                {ART_TYPES.map(type => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">O tipo pode ser alterado individualmente após criar</p>
+                          </div>
+                          
+                          {calculatedUnitValue > 0 && (
+                            <div className="sm:col-span-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
+                              <div className="flex items-center gap-2 text-primary">
+                                <Calculator className="h-4 w-4" />
+                                <span className="text-sm font-medium">Valor por Arte:</span>
+                                <span className="text-lg font-bold">
+                                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculatedUnitValue)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
+                            </div>
+                          )}
+                          
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="googleDriveLink">Link do Google Drive</Label>
+                            <div className="flex gap-2">
+                              <Input 
+                                id="googleDriveLink" 
+                                type="url"
+                                value={googleDriveLink} 
+                                onChange={(e) => setGoogleDriveLink(e.target.value)} 
+                                className="glass border-white/10 flex-1" 
+                                placeholder="https://drive.google.com/..." 
+                              />
+                              {googleDriveLink && (
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  size="icon"
+                                  className="glass border-white/10 shrink-0"
+                                  onClick={() => window.open(googleDriveLink, '_blank')}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Logos, imagens e materiais do projeto</p>
+                          </div>
+
+                          {/* Informação sobre nomes das artes */}
+                          {name && (
+                            <div className="sm:col-span-2 p-3 rounded-lg glass border border-white/10">
+                              <p className="text-xs text-muted-foreground">
+                                💡 As artes serão geradas automaticamente ao salvar:
+                              </p>
+                              <p className="text-sm text-primary mt-1">
+                                "{name} - {ART_TYPES.find(t => t.value === defaultArtType)?.label || 'Feed'} - Arte 01" até "Arte {String(parseInt(packageTotalArts) || 1).padStart(2, '0')}"
+                              </p>
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
                   )}
