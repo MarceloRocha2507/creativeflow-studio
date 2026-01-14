@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MoreVertical, Pencil, Trash2, Eye, Package, Calendar, DollarSign, User, AlertCircle, Clock } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2, Eye, Package, Calendar, DollarSign, User, AlertCircle, Clock, Briefcase } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { statusColors, statusLabels, statusAccentColors } from '@/lib/projectStatus';
+import { statusColors, statusLabels, statusAccentColors, priorityLabels } from '@/lib/projectStatus';
 
 interface Project {
   id: string;
@@ -21,6 +21,8 @@ interface Project {
   budget: number | null;
   hourly_rate: number | null;
   deadline: string | null;
+  start_date?: string | null;
+  description?: string | null;
   clients?: { name: string } | null;
 }
 
@@ -42,23 +44,31 @@ function getDeadlineInfo(deadline: string | null, status: string) {
   const days = differenceInDays(deadlineDate, today);
   
   if (days < 0) {
-    return { text: `${Math.abs(days)}d atrasado`, color: 'text-red-400 bg-red-500/10', icon: true };
+    return { text: `${Math.abs(days)}d atrasado`, color: 'text-red-400 bg-red-500/15', icon: true, urgent: true };
   } else if (days === 0) {
-    return { text: 'Hoje', color: 'text-red-400 bg-red-500/10', icon: true };
+    return { text: 'Hoje', color: 'text-red-400 bg-red-500/15', icon: true, urgent: true };
   } else if (days <= 3) {
-    return { text: `em ${days}d`, color: 'text-amber-400 bg-amber-500/10', icon: false };
+    return { text: `em ${days}d`, color: 'text-amber-400 bg-amber-500/15', icon: false, urgent: false };
   } else if (days <= 7) {
-    return { text: `em ${days}d`, color: 'text-yellow-400 bg-yellow-500/10', icon: false };
+    return { text: `em ${days}d`, color: 'text-yellow-400 bg-yellow-500/15', icon: false, urgent: false };
   } else {
-    return { text: `em ${days}d`, color: 'text-muted-foreground', icon: false };
+    return { text: `em ${days}d`, color: 'text-muted-foreground bg-muted/30', icon: false, urgent: false };
   }
+}
+
+function getBillingTypeLabel(type: string) {
+  const labels: Record<string, string> = {
+    fixed: 'Valor fixo',
+    hourly: 'Por hora',
+    package: 'Pacote'
+  };
+  return labels[type] || type;
 }
 
 export function ProjectCard({ project, index, completedArts = 0, onView, onEdit, onDelete }: ProjectCardProps) {
   const deadlineInfo = getDeadlineInfo(project.deadline, project.status);
   const totalArts = project.package_total_arts || 0;
   const progressPercent = totalArts > 0 ? (completedArts / totalArts) * 100 : 0;
-  const showPriorityBadge = project.priority === 'high' || project.priority === 'urgent';
   
   const value = project.project_type === 'package' 
     ? project.package_total_value 
@@ -66,86 +76,45 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
 
   return (
     <Card 
-      className="group relative overflow-hidden cursor-pointer transition-all duration-500 ease-out
-        bg-gradient-to-br from-card/80 via-card/60 to-card/40
-        backdrop-blur-xl backdrop-saturate-150
-        border border-white/10 hover:border-white/20
-        rounded-2xl
-        shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.1)]
-        hover:shadow-[0_20px_60px_rgba(0,0,0,0.2),0_0_40px_rgba(var(--primary-rgb),0.15),inset_0_1px_0_rgba(255,255,255,0.15)]
-        hover:scale-[1.02] hover:-translate-y-1
-        active:scale-[0.98] active:translate-y-0"
+      className="group relative overflow-hidden cursor-pointer bg-card border border-border rounded-lg"
       style={{ animationDelay: `${index * 50}ms` }}
       onClick={() => onView(project)}
     >
-      {/* Gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/5 pointer-events-none" />
+      {/* Status accent strip */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusAccentColors[project.status] || 'bg-muted-foreground'}`} />
       
-      {/* Status accent strip with glow effect */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${statusAccentColors[project.status] || 'bg-muted-foreground'}`}>
-        <div className={`absolute inset-0 blur-sm ${statusAccentColors[project.status] || 'bg-muted-foreground'} opacity-60`} />
-      </div>
-      
-      <CardHeader className="relative flex flex-row items-start justify-between pb-2 pl-6">
-        <div className="space-y-1.5 flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <CardTitle className="text-lg font-semibold tracking-tight truncate bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+      <CardHeader className="flex flex-row items-start justify-between pb-2 pl-5">
+        <div className="space-y-1 flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base font-semibold truncate">
               {project.name}
             </CardTitle>
-            {showPriorityBadge && (
-              <Tooltip>
-                <TooltipTrigger>
-                  <div className={`p-1 rounded-full ${project.priority === 'urgent' ? 'bg-red-500/20' : 'bg-orange-500/20'}`}>
-                    <AlertCircle className={`h-3.5 w-3.5 shrink-0 ${project.priority === 'urgent' ? 'text-red-400' : 'text-orange-400'}`} />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className="bg-popover/90 backdrop-blur-md border-white/10">
-                  {project.priority === 'urgent' ? 'Prioridade Urgente' : 'Prioridade Alta'}
-                </TooltipContent>
-              </Tooltip>
-            )}
           </div>
           {project.clients?.name && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground/80">
-              <div className="p-1 rounded-full bg-primary/10">
-                <User className="h-3 w-3 text-primary/80 shrink-0" />
-              </div>
-              <span className="truncate font-medium">{project.clients.name}</span>
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <User className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{project.clients.name}</span>
             </div>
           )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300 
-                hover:bg-white/10 rounded-xl backdrop-blur-sm"
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            align="end" 
-            className="bg-popover/80 backdrop-blur-xl border-white/10 rounded-xl shadow-xl"
-          >
-            <DropdownMenuItem 
-              onClick={(e) => { e.stopPropagation(); onView(project); }}
-              className="rounded-lg focus:bg-white/10"
-            >
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(project); }}>
               <Eye className="mr-2 h-4 w-4" />
               Ver detalhes
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-              className="rounded-lg focus:bg-white/10"
-            >
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} 
-              className="text-destructive focus:text-destructive rounded-lg focus:bg-destructive/10"
+              className="text-destructive focus:text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Excluir
@@ -154,74 +123,100 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
         </DropdownMenu>
       </CardHeader>
       
-      <CardContent className="relative space-y-4 pl-6">
-        <div className="flex flex-wrap gap-2">
+      <CardContent className="space-y-3 pl-5">
+        {/* Description preview */}
+        {project.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {project.description}
+          </p>
+        )}
+
+        {/* Status and Priority row */}
+        <div className="flex flex-wrap items-center gap-2">
           <Badge 
             variant="outline" 
-            className={`${statusColors[project.status] || 'bg-muted/50 text-muted-foreground border-border/50'} 
-              backdrop-blur-sm rounded-lg px-3 py-1 font-medium shadow-sm`}
+            className={statusColors[project.status] || 'bg-muted/50 text-muted-foreground border-border/50'}
           >
             {statusLabels[project.status] || project.status}
           </Badge>
-          {project.project_type === 'package' && (
+          
+          {(project.priority === 'high' || project.priority === 'urgent') && (
             <Badge 
               variant="outline" 
-              className="bg-violet-500/15 text-violet-300 border-violet-500/30 backdrop-blur-sm rounded-lg px-3 py-1"
+              className={project.priority === 'urgent' 
+                ? 'bg-red-500/15 text-red-400 border-red-500/30' 
+                : 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+              }
             >
-              <Package className="h-3 w-3 mr-1.5" />
+              <AlertCircle className="h-3 w-3 mr-1" />
+              {priorityLabels[project.priority]}
+            </Badge>
+          )}
+
+          {project.project_type === 'package' && (
+            <Badge variant="outline" className="bg-violet-500/15 text-violet-400 border-violet-500/30">
+              <Package className="h-3 w-3 mr-1" />
               {project.package_total_arts} artes
             </Badge>
           )}
         </div>
 
-        {/* Progress bar for packages with glassmorphism */}
+        {/* Project type and billing info */}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Briefcase className="h-3 w-3" />
+            <span>{getBillingTypeLabel(project.billing_type)}</span>
+          </div>
+          {project.start_date && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span>Início: {format(new Date(project.start_date), 'dd/MM/yy', { locale: ptBR })}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Progress bar for packages */}
         {project.project_type === 'package' && totalArts > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground/80">Progresso</span>
-              <span className="text-primary font-semibold">{completedArts}/{totalArts}</span>
+              <span className="text-muted-foreground">Progresso das artes</span>
+              <span className="font-medium">{completedArts}/{totalArts} concluídas</span>
             </div>
-            <div className="relative h-2 rounded-full bg-black/20 overflow-hidden backdrop-blur-sm">
-              <div 
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-primary to-primary/80 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-            </div>
+            <Progress value={progressPercent} className="h-2" />
           </div>
         )}
 
         {/* Footer with deadline and value */}
-        <div className="flex items-center justify-between text-sm pt-2 border-t border-white/5">
-          {/* Deadline with glassmorphism pill */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          {/* Deadline */}
           {project.deadline ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-sm ${deadlineInfo?.color || 'text-muted-foreground bg-muted/20'}`}>
-                  {deadlineInfo?.icon && <Clock className="h-3.5 w-3.5" />}
-                  {!deadlineInfo?.icon && <Calendar className="h-3.5 w-3.5" />}
-                  <span className="text-xs font-semibold">
-                    {deadlineInfo?.text || format(new Date(project.deadline), 'dd MMM', { locale: ptBR })}
-                  </span>
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${deadlineInfo?.color || 'text-muted-foreground'}`}>
+                  {deadlineInfo?.icon ? <Clock className="h-3.5 w-3.5" /> : <Calendar className="h-3.5 w-3.5" />}
+                  <span>{deadlineInfo?.text || format(new Date(project.deadline), 'dd MMM', { locale: ptBR })}</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="bg-popover/90 backdrop-blur-md border-white/10">
-                Prazo: {format(new Date(project.deadline), "dd 'de' MMMM", { locale: ptBR })}
+              <TooltipContent>
+                Prazo: {format(new Date(project.deadline), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </TooltipContent>
             </Tooltip>
           ) : (
-            <span />
+            <span className="text-xs text-muted-foreground">Sem prazo</span>
           )}
           
+          {/* Value */}
           {value ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 backdrop-blur-sm">
-              <DollarSign className="h-4 w-4 text-emerald-400" />
-              <span className="font-semibold text-emerald-400">
+            <div className="flex items-center gap-1 text-emerald-500 font-semibold text-sm">
+              <DollarSign className="h-4 w-4" />
+              <span>
                 R$ {value.toLocaleString('pt-BR')}
                 {project.billing_type === 'hourly' && '/h'}
               </span>
             </div>
-          ) : null}
+          ) : (
+            <span className="text-xs text-muted-foreground">Sem valor</span>
+          )}
         </div>
       </CardContent>
     </Card>
