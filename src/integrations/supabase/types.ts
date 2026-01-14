@@ -293,6 +293,7 @@ export type Database = {
           package_total_arts: number | null
           package_total_value: number | null
           priority: string
+          project_type: string
           service_type_id: string | null
           start_date: string | null
           status: string
@@ -314,6 +315,7 @@ export type Database = {
           package_total_arts?: number | null
           package_total_value?: number | null
           priority?: string
+          project_type?: string
           service_type_id?: string | null
           start_date?: string | null
           status?: string
@@ -335,6 +337,7 @@ export type Database = {
           package_total_arts?: number | null
           package_total_value?: number | null
           priority?: string
+          project_type?: string
           service_type_id?: string | null
           start_date?: string | null
           status?: string
