@@ -188,20 +188,26 @@ export function Sidebar() {
     count?: number
   ) => {
     const Icon = icon;
+    // Quando expandido, não mostra fundo ativo para evitar sobreposição com sub-items
+    const showActiveStyle = isActive && !isOpen;
     return (
       <div
         className={cn(
           'group relative flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 cursor-pointer',
-          isActive
+          showActiveStyle
             ? 'bg-primary/10 text-primary'
-            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+            : isActive && isOpen
+              ? 'text-primary hover:bg-secondary/50'
+              : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
         )}
       >
         <div className={cn(
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300',
-          isActive 
+          showActiveStyle 
             ? 'bg-primary/20 icon-glow' 
-            : 'bg-secondary/50 group-hover:bg-secondary'
+            : isActive
+              ? 'bg-primary/20'
+              : 'bg-secondary/50 group-hover:bg-secondary'
         )}>
           <Icon className={cn(
             'h-4 w-4 transition-all duration-300',
@@ -252,7 +258,7 @@ export function Sidebar() {
             <CollapsibleTrigger className="w-full p-0 text-left">
               {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive, projectsCount)}
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+            <CollapsibleContent className="mt-1 space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
               {projectsNavigation.map((item, index) => {
                 const itemCount = item.href === '/projects' ? projectsCount : item.href === '/tasks' ? tasksCount : undefined;
                 return renderNavItem(item, true, index, itemCount);
@@ -271,7 +277,7 @@ export function Sidebar() {
             <CollapsibleTrigger className="w-full p-0 text-left">
               {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive, unreadNotifications)}
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+            <CollapsibleContent className="mt-1 space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
               {settingsNavigation.map((item, index) => {
                 const itemCount = item.href === '/notifications' ? unreadNotifications : undefined;
                 return renderNavItem(item, true, index, itemCount);
