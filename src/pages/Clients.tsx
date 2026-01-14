@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +108,7 @@ const FormSection = ({ icon, title, children }: FormSectionProps) => (
 );
 
 export default function Clients() {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -534,8 +536,9 @@ export default function Clients() {
               return (
                 <Card 
                   key={client.id} 
-                  className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10"
+                  className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
                   style={{ animationDelay: `${index * 50}ms` }}
+                  onClick={() => navigate(`/clients/${client.id}`)}
                 >
                   <CardHeader className="flex flex-row items-start justify-between pb-2">
                     <div className="space-y-1 flex-1 min-w-0">
@@ -558,11 +561,16 @@ export default function Clients() {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="glass-card border-white/10">
+                      <DropdownMenuContent align="end" className="glass-card border-white/10" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onClick={() => openEditDialog(client)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Editar
