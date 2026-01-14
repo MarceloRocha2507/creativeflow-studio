@@ -124,6 +124,7 @@ export default function Projects() {
   
   // Form wizard step
   const [formStep, setFormStep] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
   // Effect to manage art names array based on package total
   useEffect(() => {
     if (projectType === 'package') {
@@ -233,16 +234,9 @@ export default function Projects() {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Only submit on last step
-    if (formStep !== 3) {
-      setFormStep(s => s + 1);
-      return;
-    }
-    
-    if (!user) return;
+  const submitProject = async () => {
+    if (!user || isSaving) return;
+    setIsSaving(true);
     // For package projects, auto-generate name if empty
     const clientName = clients.find(c => c.id === clientId)?.name || 'Cliente';
     const projectName = projectType === 'package' && !name 
@@ -297,6 +291,7 @@ export default function Projects() {
       fetchData();
       setIsDialogOpen(false);
       resetForm();
+      setIsSaving(false);
     } else {
       const { data: newProject, error } = await supabase
         .from('projects')
@@ -329,6 +324,7 @@ export default function Projects() {
       fetchData();
       setIsDialogOpen(false);
       resetForm();
+      setIsSaving(false);
     }
   };
 
@@ -428,7 +424,7 @@ export default function Projects() {
                 ))}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-4" onKeyDown={(e) => { if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) e.preventDefault(); }}>
                 {/* Step 1: Tipo do Projeto */}
                 {formStep === 1 && (
                   <div className="space-y-4 animate-fade-in">
@@ -683,12 +679,17 @@ export default function Projects() {
                       Próximo →
                     </Button>
                   ) : (
-                    <Button type="submit" className="gradient-primary glow-primary">
-                      {editingProject ? 'Salvar' : 'Criar Projeto'}
+                    <Button 
+                      type="button" 
+                      onClick={submitProject}
+                      disabled={isSaving}
+                      className="gradient-primary glow-primary"
+                    >
+                      {isSaving ? 'Salvando...' : (editingProject ? 'Salvar' : 'Criar Projeto')}
                     </Button>
                   )}
                 </div>
-              </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
