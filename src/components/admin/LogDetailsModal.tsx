@@ -3,6 +3,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -38,6 +39,7 @@ export function LogDetailsModal({ open, onOpenChange, log, userName }: LogDetail
             <FileText className="h-5 w-5" />
             Detalhes do Log
           </DialogTitle>
+          <DialogDescription className="sr-only">Detalhes completos do log selecionado</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
