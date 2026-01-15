@@ -12,11 +12,11 @@ import {
   LogOut,
   Sparkles,
   Bell,
-  UserCircle,
   Shield,
   Key,
   ScrollText,
   ChevronDown,
+  ChevronRight,
   Store,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +28,8 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
 
@@ -46,13 +47,6 @@ const projectsNavigation = [
   { name: 'Horas', href: '/time-tracking', icon: Clock },
 ];
 
-// Submenu de Configurações
-const settingsNavigation = [
-  { name: 'Meu Perfil', href: '/profile', icon: UserCircle },
-  { name: 'Notificações', href: '/notifications', icon: Bell },
-  { name: 'Preferências', href: '/settings', icon: Settings },
-];
-
 // Admin navigation
 const adminNavigation = [
   { name: 'Painel Admin', href: '/admin', icon: Shield },
@@ -64,20 +58,15 @@ const adminNavigation = [
 
 // Rotas de cada submenu
 const projectRoutes = ['/projects', '/tasks', '/time-tracking'];
-const settingsRoutes = ['/profile', '/notifications', '/settings'];
 
 export function Sidebar() {
   const location = useLocation();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { isAdmin } = useAdmin();
   
   // Estado dos submenus
   const [projectsOpen, setProjectsOpen] = useState(() => {
     return projectRoutes.includes(location.pathname);
-  });
-  
-  const [settingsOpen, setSettingsOpen] = useState(() => {
-    return settingsRoutes.includes(location.pathname);
   });
   
   const [adminOpen, setAdminOpen] = useState(() => {
@@ -91,13 +80,16 @@ export function Sidebar() {
   const [tasksCount, setTasksCount] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
+  // Dados do perfil do usuário
+  const [profile, setProfile] = useState<{
+    full_name: string | null;
+    logo_url: string | null;
+  } | null>(null);
+
   // Auto-expandir submenu quando navegar para uma rota dentro dele
   useEffect(() => {
     if (projectRoutes.includes(location.pathname)) {
       setProjectsOpen(true);
-    }
-    if (settingsRoutes.includes(location.pathname)) {
-      setSettingsOpen(true);
     }
   }, [location.pathname]);
 
@@ -134,8 +126,34 @@ export function Sidebar() {
     fetchCounts();
   }, []);
 
+  // Buscar dados do perfil
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, logo_url')
+        .eq('user_id', user.id)
+        .single();
+      
+      setProfile(data);
+    };
+    
+    fetchProfile();
+  }, [user]);
+
   const isProjectsActive = projectRoutes.includes(location.pathname);
-  const isSettingsActive = settingsRoutes.includes(location.pathname);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const renderNavItem = (item: typeof mainNavigation[0], isSubItem = false, index = 0, count?: number) => {
     const isActive = location.pathname === item.href;
@@ -229,11 +247,15 @@ export function Sidebar() {
     );
   };
 
+  const isNotificationsActive = location.pathname === '/notifications';
+  const isProfileActive = location.pathname === '/profile';
+  const isSettingsActive = location.pathname === '/settings';
+
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass border-r border-border/50">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between border-b border-border/50 px-6">
+        <div className="flex h-16 items-center justify-center border-b border-border/50 px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-lg glow-primary">
               <Sparkles className="h-5 w-5 text-primary-foreground" />
@@ -243,7 +265,6 @@ export function Sidebar() {
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Studio</span>
             </div>
           </div>
-          <NotificationBell />
         </div>
 
         {/* Navigation */}
@@ -275,19 +296,6 @@ export function Sidebar() {
           
           {/* Financeiro */}
           {renderNavItem(mainNavigation[2])}
-          
-          {/* Configurações - Collapsible */}
-          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <CollapsibleTrigger className="w-full p-0 text-left">
-              {renderCollapsibleTrigger(Settings, 'Configurações', settingsOpen, isSettingsActive, unreadNotifications)}
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-1 space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-              {settingsNavigation.map((item, index) => {
-                const itemCount = item.href === '/notifications' ? unreadNotifications : undefined;
-                return renderNavItem(item, true, index, itemCount);
-              })}
-            </CollapsibleContent>
-          </Collapsible>
 
           {/* Admin Section - Separado e colapsado por padrão */}
           {isAdmin && (
@@ -306,8 +314,97 @@ export function Sidebar() {
           )}
         </nav>
 
-        {/* Footer */}
-        <div className="border-t border-border/50 p-4">
+        {/* Footer - Unified Profile, Notifications, Preferences */}
+        <div className="border-t border-border/50 p-3 space-y-2">
+          {/* Notificações */}
+          <Link
+            to="/notifications"
+            className={cn(
+              'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
+              isNotificationsActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+            )}
+          >
+            <div className={cn(
+              'relative flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
+              isNotificationsActive 
+                ? 'bg-primary/20 icon-glow' 
+                : 'bg-secondary/50 group-hover:bg-secondary'
+            )}>
+              <Bell className={cn(
+                'h-4 w-4 transition-all duration-300',
+                isNotificationsActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
+                unreadNotifications > 0 && 'animate-bell-wiggle'
+              )} />
+            </div>
+            <span className="flex-1">Notificações</span>
+            {unreadNotifications > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+                {unreadNotifications > 99 ? '99+' : unreadNotifications}
+              </span>
+            )}
+          </Link>
+
+          {/* Preferências */}
+          <Link
+            to="/settings"
+            className={cn(
+              'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
+              isSettingsActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+            )}
+          >
+            <div className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
+              isSettingsActive 
+                ? 'bg-primary/20 icon-glow' 
+                : 'bg-secondary/50 group-hover:bg-secondary'
+            )}>
+              <Settings className={cn(
+                'h-4 w-4 transition-all duration-300',
+                isSettingsActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+              )} />
+            </div>
+            <span>Preferências</span>
+          </Link>
+
+          <Separator className="my-2" />
+
+          {/* Perfil do Usuário */}
+          <Link
+            to="/profile"
+            className={cn(
+              'group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300',
+              isProfileActive
+                ? 'bg-primary/10'
+                : 'hover:bg-secondary/50'
+            )}
+          >
+            <Avatar className="h-9 w-9 border-2 border-border/50">
+              <AvatarImage src={profile?.logo_url || undefined} alt={profile?.full_name || 'Avatar'} />
+              <AvatarFallback className="bg-primary/20 text-primary text-sm font-medium">
+                {getInitials(profile?.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-1 flex-col min-w-0">
+              <span className={cn(
+                'text-sm font-medium truncate',
+                isProfileActive ? 'text-primary' : 'text-foreground'
+              )}>
+                {profile?.full_name || 'Usuário'}
+              </span>
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                Ver perfil
+                <ChevronRight className="h-3 w-3" />
+              </span>
+            </div>
+          </Link>
+
+          <Separator className="my-2" />
+
+          {/* Botão Sair */}
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 rounded-xl text-muted-foreground transition-all duration-300 hover:bg-destructive/10 hover:text-destructive"
