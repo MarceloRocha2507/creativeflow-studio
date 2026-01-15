@@ -373,6 +373,7 @@ export default function Projects() {
   const artStatusLabels: Record<string, string> = {
     pending: 'Pendente',
     in_progress: 'Em andamento',
+    pending_approval: 'Em aprovação',
     completed: 'Concluída',
     approved: 'Aprovada',
   };
