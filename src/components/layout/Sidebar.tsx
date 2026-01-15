@@ -8,7 +8,6 @@ import {
   Clock,
   CheckSquare,
   DollarSign,
-  Settings,
   LogOut,
   Sparkles,
   Bell,
@@ -314,93 +313,61 @@ export function Sidebar() {
           )}
         </nav>
 
-        {/* Footer - Unified Profile, Notifications, Preferences */}
+        {/* Footer - Profile with Notifications Icon */}
         <div className="border-t border-border/50 p-3 space-y-2">
-          {/* Notificações */}
-          <Link
-            to="/notifications"
-            className={cn(
-              'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
-              isNotificationsActive
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-            )}
-          >
-            <div className={cn(
-              'relative flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
-              isNotificationsActive 
-                ? 'bg-primary/20 icon-glow' 
-                : 'bg-secondary/50 group-hover:bg-secondary'
-            )}>
+          {/* Perfil do Usuário + Ícone de Notificações */}
+          <div className="flex items-center gap-2">
+            <Link
+              to="/profile"
+              className={cn(
+                'group flex flex-1 items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300',
+                isProfileActive
+                  ? 'bg-primary/10'
+                  : 'hover:bg-secondary/50'
+              )}
+            >
+              <Avatar className="h-9 w-9 border-2 border-border/50">
+                <AvatarImage src={profile?.logo_url || undefined} alt={profile?.full_name || 'Avatar'} />
+                <AvatarFallback className="bg-primary/20 text-primary text-sm font-medium">
+                  {getInitials(profile?.full_name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-1 flex-col min-w-0">
+                <span className={cn(
+                  'text-sm font-medium truncate',
+                  isProfileActive ? 'text-primary' : 'text-foreground'
+                )}>
+                  {profile?.full_name || 'Usuário'}
+                </span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  Ver perfil
+                  <ChevronRight className="h-3 w-3" />
+                </span>
+              </div>
+            </Link>
+
+            {/* Ícone de Notificações */}
+            <Link
+              to="/notifications"
+              className={cn(
+                'relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300',
+                isNotificationsActive
+                  ? 'bg-primary/10'
+                  : 'hover:bg-secondary/50'
+              )}
+            >
               <Bell className={cn(
-                'h-4 w-4 transition-all duration-300',
-                isNotificationsActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
+                'h-5 w-5 transition-all duration-300',
+                isNotificationsActive ? 'text-primary' : 'text-muted-foreground',
                 unreadNotifications > 0 && 'animate-bell-wiggle'
               )} />
-            </div>
-            <span className="flex-1">Notificações</span>
-            {unreadNotifications > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-                {unreadNotifications > 99 ? '99+' : unreadNotifications}
-              </span>
-            )}
-          </Link>
-
-          {/* Preferências */}
-          <Link
-            to="/settings"
-            className={cn(
-              'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
-              isSettingsActive
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-            )}
-          >
-            <div className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
-              isSettingsActive 
-                ? 'bg-primary/20 icon-glow' 
-                : 'bg-secondary/50 group-hover:bg-secondary'
-            )}>
-              <Settings className={cn(
-                'h-4 w-4 transition-all duration-300',
-                isSettingsActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-              )} />
-            </div>
-            <span>Preferências</span>
-          </Link>
-
-          <Separator className="my-2" />
-
-          {/* Perfil do Usuário */}
-          <Link
-            to="/profile"
-            className={cn(
-              'group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300',
-              isProfileActive
-                ? 'bg-primary/10'
-                : 'hover:bg-secondary/50'
-            )}
-          >
-            <Avatar className="h-9 w-9 border-2 border-border/50">
-              <AvatarImage src={profile?.logo_url || undefined} alt={profile?.full_name || 'Avatar'} />
-              <AvatarFallback className="bg-primary/20 text-primary text-sm font-medium">
-                {getInitials(profile?.full_name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-1 flex-col min-w-0">
-              <span className={cn(
-                'text-sm font-medium truncate',
-                isProfileActive ? 'text-primary' : 'text-foreground'
-              )}>
-                {profile?.full_name || 'Usuário'}
-              </span>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                Ver perfil
-                <ChevronRight className="h-3 w-3" />
-              </span>
-            </div>
-          </Link>
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
+              )}
+            </Link>
+          </div>
 
           <Separator className="my-2" />
 
