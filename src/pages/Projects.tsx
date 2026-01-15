@@ -668,10 +668,10 @@ export default function Projects() {
                         <button
                           type="button"
                           onClick={() => setProjectType('single')}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none pointer-events-auto ${
                             projectType === 'single'
                               ? 'border-primary bg-primary/10 text-primary'
-                              : 'border-white/10 glass hover:border-white/20'
+                              : 'border-white/10 bg-muted/30 hover:border-white/20 hover:bg-muted/50'
                           }`}
                         >
                           <FileText className="h-5 w-5" />
@@ -680,10 +680,10 @@ export default function Projects() {
                         <button
                           type="button"
                           onClick={() => setProjectType('package')}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none pointer-events-auto ${
                             projectType === 'package'
                               ? 'border-primary bg-primary/10 text-primary'
-                              : 'border-white/10 glass hover:border-white/20'
+                              : 'border-white/10 bg-muted/30 hover:border-white/20 hover:bg-muted/50'
                           }`}
                         >
                           <Package className="h-5 w-5" />
