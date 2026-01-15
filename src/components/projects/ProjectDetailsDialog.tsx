@@ -487,7 +487,7 @@ export function ProjectDetailsDialog({
                           <option value="all">Todas</option>
                           <option value="pending">Pendentes</option>
                           <option value="in_progress">Em andamento</option>
-                          <option value="pending_approval">Em aprovação</option>
+                          <option value="pending_approval">Enviado para Aprovação</option>
                           <option value="completed">Concluídas</option>
                           <option value="approved">Aprovadas</option>
                         </select>
@@ -605,7 +605,7 @@ export function ProjectDetailsDialog({
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => onUpdateArtStatus(art.id, 'pending_approval')}>
                                 <div className="w-2 h-2 rounded-full bg-amber-400 mr-2" />
-                                Em aprovação
+                                Enviado para Aprovação
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => onUpdateArtStatus(art.id, 'completed')}>
                                 <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2" />

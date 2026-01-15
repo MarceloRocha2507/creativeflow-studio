@@ -17,7 +17,7 @@ interface StatusChipsProps {
 const statusConfig: Record<string, { label: string; color: string; activeColor: string }> = {
   all: { label: 'Todos', color: 'bg-muted/50 text-muted-foreground border-border/50', activeColor: 'bg-primary/20 text-primary border-primary/40' },
   in_progress: { label: 'Em andamento', color: 'bg-cyan-500/10 text-cyan-400/70 border-cyan-500/20', activeColor: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' },
-  pending_approval: { label: 'Aguardando', color: 'bg-amber-500/10 text-amber-400/70 border-amber-500/20', activeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
+  pending_approval: { label: 'Enviado p/ Aprovação', color: 'bg-amber-500/10 text-amber-400/70 border-amber-500/20', activeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
   completed: { label: 'Concluídos', color: 'bg-emerald-500/10 text-emerald-400/70 border-emerald-500/20', activeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' },
   paused: { label: 'Pausados', color: 'bg-muted/30 text-muted-foreground/70 border-border/30', activeColor: 'bg-muted/50 text-muted-foreground border-border/50' },
   cancelled: { label: 'Cancelados', color: 'bg-red-500/10 text-red-400/70 border-red-500/20', activeColor: 'bg-red-500/20 text-red-400 border-red-500/40' },

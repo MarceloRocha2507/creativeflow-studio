@@ -46,6 +46,7 @@ const statusColors: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   not_started: 'Não Iniciado',
   in_progress: 'Em Andamento',
+  pending_approval: 'Enviado para Aprovação',
   on_hold: 'Pausado',
   completed: 'Concluído',
   cancelled: 'Cancelado',

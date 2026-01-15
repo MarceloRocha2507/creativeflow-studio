@@ -14,7 +14,7 @@ export const statusColors: Record<string, string> = {
 export const statusLabels: Record<string, string> = {
   not_started: 'Não Iniciado',
   in_progress: 'Em Andamento',
-  pending_approval: 'Aguardando Aprovação',
+  pending_approval: 'Enviado para Aprovação',
   on_hold: 'Pausado',
   paused: 'Pausado',
   completed: 'Concluído',
@@ -49,7 +49,7 @@ export const priorityLabels: Record<string, string> = {
 export const artStatusLabels: Record<string, string> = {
   pending: 'Pendente',
   in_progress: 'Em andamento',
-  pending_approval: 'Em aprovação',
+  pending_approval: 'Enviado para Aprovação',
   completed: 'Concluída',
   approved: 'Aprovada',
 };
