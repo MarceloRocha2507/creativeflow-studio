@@ -128,11 +128,44 @@ export function ProjectDetailsDialog({
     };
   }, [projectArts]);
 
-  // Filter arts
+  // Status priority order for sorting (active statuses first)
+  const artStatusOrder: Record<string, number> = {
+    in_progress: 0,
+    pending: 1,
+    completed: 2,
+    approved: 3,
+  };
+
+  // Filter and sort arts by status priority
   const filteredArts = useMemo(() => {
-    if (artStatusFilter === 'all') return projectArts;
-    return projectArts.filter(art => art.status === artStatusFilter);
+    const arts = artStatusFilter === 'all' 
+      ? [...projectArts] 
+      : projectArts.filter(art => art.status === artStatusFilter);
+    
+    return arts.sort((a, b) => 
+      (artStatusOrder[a.status] ?? 99) - (artStatusOrder[b.status] ?? 99)
+    );
   }, [projectArts, artStatusFilter]);
+
+  // Get card styles based on status (highlight active statuses)
+  const getArtCardStyles = (status: string) => {
+    if (status === 'in_progress') {
+      return 'bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]';
+    }
+    if (status === 'pending') {
+      return 'bg-amber-500/5 border-amber-500/20';
+    }
+    // Completed/Approved - more subtle
+    return 'glass border-white/5 opacity-80';
+  };
+
+  // Get accent strip width based on status
+  const getAccentStripWidth = (status: string) => {
+    if (status === 'in_progress' || status === 'pending') {
+      return 'w-1.5';
+    }
+    return 'w-1';
+  };
 
   // Recent time entries (last 5)
   const recentTimeEntries = useMemo(() => {
@@ -403,10 +436,10 @@ export function ProjectDetailsDialog({
                       {filteredArts.map(art => (
                         <div 
                           key={art.id} 
-                          className="glass rounded-lg p-3 border border-white/5 flex items-center justify-between hover:border-white/10 transition-colors relative overflow-hidden"
+                          className={`rounded-lg p-3 flex items-center justify-between hover:border-white/10 transition-all relative overflow-hidden ${getArtCardStyles(art.status)}`}
                         >
                           {/* Status accent strip */}
-                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${artStatusColors[art.status] || 'bg-muted-foreground'}`} />
+                          <div className={`absolute left-0 top-0 bottom-0 ${getAccentStripWidth(art.status)} ${artStatusColors[art.status] || 'bg-muted-foreground'}`} />
                           
                           <div className="flex items-center gap-3 pl-2">
                             <div className={`w-3 h-3 rounded-full transition-colors ${
