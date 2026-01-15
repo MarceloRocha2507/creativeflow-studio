@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   Store,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -313,60 +314,68 @@ export function Sidebar() {
           )}
         </nav>
 
-        {/* Footer - Profile with Notifications Icon */}
+        {/* Footer - Profile with Icons */}
         <div className="border-t border-border/50 p-3 space-y-2">
-          {/* Perfil do Usuário + Ícone de Notificações */}
-          <div className="flex items-center gap-2">
-            <Link
-              to="/profile"
-              className={cn(
-                'group flex flex-1 items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300',
-                isProfileActive
-                  ? 'bg-primary/10'
-                  : 'hover:bg-secondary/50'
-              )}
-            >
-              <Avatar className="h-9 w-9 border-2 border-border/50">
+          {/* Perfil do Usuário com Ícones de Ação */}
+          <div className={cn(
+            'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300',
+            isProfileActive ? 'bg-primary/10' : 'hover:bg-secondary/50'
+          )}>
+            <Link to="/profile" className="flex items-center gap-3 flex-1 min-w-0">
+              <Avatar className="h-9 w-9 shrink-0 border-2 border-border/50">
                 <AvatarImage src={profile?.logo_url || undefined} alt={profile?.full_name || 'Avatar'} />
                 <AvatarFallback className="bg-primary/20 text-primary text-sm font-medium">
                   {getInitials(profile?.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-1 flex-col min-w-0">
+              <div className="flex flex-col min-w-0">
                 <span className={cn(
                   'text-sm font-medium truncate',
                   isProfileActive ? 'text-primary' : 'text-foreground'
                 )}>
                   {profile?.full_name || 'Usuário'}
                 </span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">
                   Ver perfil
-                  <ChevronRight className="h-3 w-3" />
                 </span>
               </div>
             </Link>
-
-            {/* Ícone de Notificações */}
-            <Link
-              to="/notifications"
-              className={cn(
-                'relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300',
-                isNotificationsActive
-                  ? 'bg-primary/10'
-                  : 'hover:bg-secondary/50'
-              )}
-            >
-              <Bell className={cn(
-                'h-5 w-5 transition-all duration-300',
-                isNotificationsActive ? 'text-primary' : 'text-muted-foreground',
-                unreadNotifications > 0 && 'animate-bell-wiggle'
-              )} />
-              {unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
-                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                </span>
-              )}
-            </Link>
+            
+            {/* Ícones de Ações */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Notificações */}
+              <Link
+                to="/notifications"
+                className={cn(
+                  'relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+                  isNotificationsActive ? 'bg-primary/20' : 'hover:bg-primary/10'
+                )}
+                title="Notificações"
+              >
+                <Bell className={cn(
+                  'h-4 w-4 transition-all duration-300',
+                  isNotificationsActive ? 'text-primary' : 'text-muted-foreground hover:text-primary',
+                  unreadNotifications > 0 && 'animate-bell-wiggle'
+                )} />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
+                )}
+              </Link>
+              
+              {/* Configurações */}
+              <Link
+                to="/profile#preferences"
+                className={cn(
+                  'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+                  isSettingsActive ? 'bg-primary/20' : 'hover:bg-primary/10'
+                )}
+                title="Preferências"
+              >
+                <Settings className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+              </Link>
+            </div>
           </div>
 
           <Separator className="my-2" />
