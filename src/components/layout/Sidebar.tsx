@@ -28,6 +28,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
 
@@ -232,14 +233,17 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass border-r border-border/50">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b border-border/50 px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-lg glow-primary">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+        <div className="flex h-16 items-center justify-between border-b border-border/50 px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-lg glow-primary">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-gradient">DesignFlow</span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Studio</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold text-gradient">DesignFlow</span>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Studio</span>
-          </div>
+          <NotificationBell />
         </div>
 
         {/* Navigation */}

@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useNotificationChecker } from '@/hooks/useNotificationChecker';
 
 interface AppLayoutProps {
@@ -28,13 +27,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Mobile Navigation */}
       <MobileNav />
-
-      {/* Desktop Header with Notifications */}
-      <div className="fixed right-6 top-4 z-50 hidden lg:flex items-center gap-4">
-        <div className="glass rounded-full p-1">
-          <NotificationBell />
-        </div>
-      </div>
 
       {/* Main Content */}
       <main className="relative lg:pl-64">
