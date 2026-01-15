@@ -377,6 +377,26 @@ export default function Projects() {
     toast({ title: 'Nome do projeto atualizado!' });
   };
 
+  const updateArtName = async (artId: string, newName: string) => {
+    const { error } = await supabase
+      .from('project_arts')
+      .update({ name: newName })
+      .eq('id', artId);
+      
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao atualizar nome', description: error.message });
+      return;
+    }
+    
+    setProjectArts(prev => 
+      prev.map(art => 
+        art.id === artId ? { ...art, name: newName } : art
+      )
+    );
+    
+    toast({ title: 'Nome da arte atualizado!' });
+  };
+
   const formatTotalTime = (entries: TimeEntry[]) => {
     const totalMinutes = entries.reduce((acc, e) => acc + (e.duration_minutes || 0), 0);
     const hours = Math.floor(totalMinutes / 60);
@@ -1050,6 +1070,7 @@ export default function Projects() {
           onUpdateArtStatus={updateArtStatus}
           onUpdateProjectStatus={updateProjectStatus}
           onUpdateProjectName={updateProjectName}
+          onUpdateArtName={updateArtName}
         />
       </div>
     </AppLayout>
