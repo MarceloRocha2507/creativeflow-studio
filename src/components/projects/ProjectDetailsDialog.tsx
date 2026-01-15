@@ -132,8 +132,9 @@ export function ProjectDetailsDialog({
   const artStatusOrder: Record<string, number> = {
     in_progress: 0,
     pending: 1,
-    completed: 2,
-    approved: 3,
+    pending_approval: 2,
+    completed: 3,
+    approved: 4,
   };
 
   // Filter and sort arts by status priority
@@ -155,13 +156,16 @@ export function ProjectDetailsDialog({
     if (status === 'pending') {
       return 'bg-amber-500/5 border-amber-500/20';
     }
+    if (status === 'pending_approval') {
+      return 'bg-orange-500/10 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]';
+    }
     // Completed/Approved - more subtle
     return 'glass border-white/5 opacity-80';
   };
 
   // Get accent strip width based on status
   const getAccentStripWidth = (status: string) => {
-    if (status === 'in_progress' || status === 'pending') {
+    if (status === 'in_progress' || status === 'pending' || status === 'pending_approval') {
       return 'w-1.5';
     }
     return 'w-1';
@@ -414,6 +418,7 @@ export function ProjectDetailsDialog({
                           <option value="all">Todas</option>
                           <option value="pending">Pendentes</option>
                           <option value="in_progress">Em andamento</option>
+                          <option value="pending_approval">Em aprovação</option>
                           <option value="completed">Concluídas</option>
                           <option value="approved">Aprovadas</option>
                         </select>
@@ -473,6 +478,10 @@ export function ProjectDetailsDialog({
                               <DropdownMenuItem onClick={() => onUpdateArtStatus(art.id, 'in_progress')}>
                                 <div className="w-2 h-2 rounded-full bg-cyan-400 mr-2" />
                                 Em andamento
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onUpdateArtStatus(art.id, 'pending_approval')}>
+                                <div className="w-2 h-2 rounded-full bg-amber-400 mr-2" />
+                                Em aprovação
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => onUpdateArtStatus(art.id, 'completed')}>
                                 <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2" />

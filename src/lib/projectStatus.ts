@@ -49,6 +49,7 @@ export const priorityLabels: Record<string, string> = {
 export const artStatusLabels: Record<string, string> = {
   pending: 'Pendente',
   in_progress: 'Em andamento',
+  pending_approval: 'Em aprovação',
   completed: 'Concluída',
   approved: 'Aprovada',
 };
@@ -56,6 +57,7 @@ export const artStatusLabels: Record<string, string> = {
 export const artStatusColors: Record<string, string> = {
   pending: 'bg-muted-foreground',
   in_progress: 'bg-cyan-400',
+  pending_approval: 'bg-amber-400',
   completed: 'bg-emerald-400',
   approved: 'bg-emerald-400',
 };
