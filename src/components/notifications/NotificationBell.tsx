@@ -22,7 +22,7 @@ export function NotificationBell() {
           className="relative h-9 w-9"
           aria-label={`Notificações ${unreadCount > 0 ? `(${unreadCount} não lidas)` : ''}`}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className={cn("h-5 w-5", unreadCount > 0 && "animate-bell-wiggle")} />
           {unreadCount > 0 && (
             <span
               className={cn(
