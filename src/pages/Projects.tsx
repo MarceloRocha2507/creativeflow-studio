@@ -353,6 +353,30 @@ export default function Projects() {
     toast({ title: 'Status do projeto atualizado!' });
   };
 
+  const updateProjectName = async (newName: string) => {
+    if (!viewingProject) return;
+    
+    const { error } = await supabase
+      .from('projects')
+      .update({ name: newName })
+      .eq('id', viewingProject.id);
+      
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao atualizar nome', description: error.message });
+      return;
+    }
+    
+    // Update local state
+    setViewingProject(prev => prev ? { ...prev, name: newName } : null);
+    setProjects(prev => 
+      prev.map(p => 
+        p.id === viewingProject.id ? { ...p, name: newName } : p
+      )
+    );
+    
+    toast({ title: 'Nome do projeto atualizado!' });
+  };
+
   const formatTotalTime = (entries: TimeEntry[]) => {
     const totalMinutes = entries.reduce((acc, e) => acc + (e.duration_minutes || 0), 0);
     const hours = Math.floor(totalMinutes / 60);
@@ -1025,6 +1049,7 @@ export default function Projects() {
           onEdit={openEditDialog}
           onUpdateArtStatus={updateArtStatus}
           onUpdateProjectStatus={updateProjectStatus}
+          onUpdateProjectName={updateProjectName}
         />
       </div>
     </AppLayout>

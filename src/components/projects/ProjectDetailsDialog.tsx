@@ -4,11 +4,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Calendar, DollarSign, User, Package, Clock, Pencil, 
   ChevronDown, ExternalLink, AlertCircle, CheckCircle2, 
-  Eye, Layers, History, Filter
+  Eye, Layers, History, Filter, Check, X
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -65,6 +66,7 @@ interface ProjectDetailsDialogProps {
   onEdit: (project: Project) => void;
   onUpdateArtStatus: (artId: string, status: string) => void;
   onUpdateProjectStatus: (status: string) => void;
+  onUpdateProjectName?: (name: string) => void;
 }
 
 const formatTotalTime = (entries: TimeEntry[]): string => {
@@ -85,9 +87,12 @@ export function ProjectDetailsDialog({
   onEdit,
   onUpdateArtStatus,
   onUpdateProjectStatus,
+  onUpdateProjectName,
 }: ProjectDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [artStatusFilter, setArtStatusFilter] = useState<string>('all');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
 
   // Calculate deadline info
   const deadlineInfo = useMemo(() => {
@@ -222,9 +227,69 @@ export function ProjectDetailsDialog({
         <DialogHeader className="p-6 pb-4 border-b border-white/5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-xl font-bold text-gradient truncate">
-                {project.name}
-              </DialogTitle>
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="h-8 text-lg font-bold bg-muted/30 border-white/10"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && editedName.trim()) {
+                        onUpdateProjectName?.(editedName.trim());
+                        setIsEditingName(false);
+                      }
+                      if (e.key === 'Escape') {
+                        setIsEditingName(false);
+                        setEditedName(project.name);
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                    onClick={() => {
+                      if (editedName.trim()) {
+                        onUpdateProjectName?.(editedName.trim());
+                        setIsEditingName(false);
+                      }
+                    }}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setEditedName(project.name);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <DialogTitle className="text-xl font-bold text-gradient truncate">
+                    {project.name}
+                  </DialogTitle>
+                  {onUpdateProjectName && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setEditedName(project.name);
+                        setIsEditingName(true);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
               {project.clients?.name && (
                 <div className="flex items-center gap-2 mt-1.5 text-sm text-muted-foreground">
                   <User className="h-3.5 w-3.5" />
