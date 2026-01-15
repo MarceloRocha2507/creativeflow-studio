@@ -67,6 +67,7 @@ interface ProjectDetailsDialogProps {
   onUpdateArtStatus: (artId: string, status: string) => void;
   onUpdateProjectStatus: (status: string) => void;
   onUpdateProjectName?: (name: string) => void;
+  onUpdateArtName?: (artId: string, name: string) => void;
 }
 
 const formatTotalTime = (entries: TimeEntry[]): string => {
@@ -88,11 +89,14 @@ export function ProjectDetailsDialog({
   onUpdateArtStatus,
   onUpdateProjectStatus,
   onUpdateProjectName,
+  onUpdateArtName,
 }: ProjectDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [artStatusFilter, setArtStatusFilter] = useState<string>('all');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [editingArtId, setEditingArtId] = useState<string | null>(null);
+  const [editedArtName, setEditedArtName] = useState('');
 
   // Calculate deadline info
   const deadlineInfo = useMemo(() => {
@@ -503,7 +507,7 @@ export function ProjectDetailsDialog({
 
                     {/* Arts List */}
                     <div className="space-y-2">
-                      {filteredArts.map(art => (
+                    {filteredArts.map(art => (
                         <div 
                           key={art.id} 
                           className={`rounded-lg p-3 flex items-center justify-between hover:border-white/10 transition-all relative overflow-hidden ${getArtCardStyles(art.status)}`}
@@ -511,16 +515,72 @@ export function ProjectDetailsDialog({
                           {/* Status accent strip */}
                           <div className={`absolute left-0 top-0 bottom-0 ${getAccentStripWidth(art.status)} ${artStatusColors[art.status] || 'bg-muted-foreground'}`} />
                           
-                          <div className="flex items-center gap-3 pl-2">
-                            <div className={`w-3 h-3 rounded-full transition-colors ${
+                          <div className="flex items-center gap-3 pl-2 flex-1 min-w-0">
+                            <div className={`w-3 h-3 rounded-full transition-colors shrink-0 ${
                               art.status === 'completed' || art.status === 'approved' 
                                 ? 'bg-emerald-400' 
                                 : art.status === 'in_progress'
                                   ? 'bg-cyan-400'
                                   : 'bg-muted-foreground'
                             }`} />
-                            <div>
-                              <p className="font-medium text-sm">{art.name}</p>
+                            <div className="flex-1 min-w-0">
+                              {editingArtId === art.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editedArtName}
+                                    onChange={(e) => setEditedArtName(e.target.value)}
+                                    className="h-7 text-sm bg-muted/30 border-white/10"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && editedArtName.trim()) {
+                                        onUpdateArtName?.(art.id, editedArtName.trim());
+                                        setEditingArtId(null);
+                                      }
+                                      if (e.key === 'Escape') {
+                                        setEditingArtId(null);
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                                    onClick={() => {
+                                      if (editedArtName.trim()) {
+                                        onUpdateArtName?.(art.id, editedArtName.trim());
+                                        setEditingArtId(null);
+                                      }
+                                    }}
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                    onClick={() => setEditingArtId(null)}
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 group/art">
+                                  <p className="font-medium text-sm truncate">{art.name}</p>
+                                  {onUpdateArtName && (
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-5 w-5 opacity-0 group-hover/art:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0"
+                                      onClick={() => {
+                                        setEditedArtName(art.name);
+                                        setEditingArtId(art.id);
+                                      }}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
                               <p className="text-xs text-muted-foreground">{art.art_type}</p>
                             </div>
                           </div>
@@ -529,7 +589,7 @@ export function ProjectDetailsDialog({
                             <DropdownMenuTrigger asChild>
                               <Badge 
                                 variant="outline" 
-                                className="cursor-pointer hover:bg-primary/20 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1"
+                                className="cursor-pointer hover:bg-primary/20 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1 shrink-0"
                               >
                                 {artStatusLabels[art.status] || art.status}
                                 <ChevronDown className="h-3 w-3" />
