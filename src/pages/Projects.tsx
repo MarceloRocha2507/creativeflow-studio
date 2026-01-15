@@ -417,7 +417,7 @@ export default function Projects() {
   const artStatusLabels: Record<string, string> = {
     pending: 'Pendente',
     in_progress: 'Em andamento',
-    pending_approval: 'Em aprovação',
+    pending_approval: 'Enviado para Aprovação',
     completed: 'Concluída',
     approved: 'Aprovada',
   };
@@ -834,7 +834,7 @@ export default function Projects() {
                           <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
                           <SelectContent className="glass-card border-white/10">
                             <SelectItem value="in_progress">Em andamento</SelectItem>
-                            <SelectItem value="pending_approval">Aguardando aprovação</SelectItem>
+                            <SelectItem value="pending_approval">Enviado para Aprovação</SelectItem>
                             <SelectItem value="completed">Concluído</SelectItem>
                             <SelectItem value="paused">Pausado</SelectItem>
                             <SelectItem value="cancelled">Cancelado</SelectItem>
