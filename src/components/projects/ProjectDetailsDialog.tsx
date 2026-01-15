@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -279,6 +279,7 @@ export function ProjectDetailsDialog({
                   <DialogTitle className="text-xl font-bold text-gradient truncate">
                     {project.name}
                   </DialogTitle>
+                  <DialogDescription className="sr-only">Detalhes do projeto selecionado</DialogDescription>
                   {onUpdateProjectName && (
                     <Button
                       size="icon"
@@ -305,13 +306,12 @@ export function ProjectDetailsDialog({
               {/* Editable Status */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Badge 
-                    variant="outline" 
-                    className={`${statusColors[project.status]} cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1`}
+                  <button 
+                    className={`${statusColors[project.status]} cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 px-2.5 py-0.5 text-xs rounded-full border`}
                   >
                     {statusLabels[project.status]}
                     <ChevronDown className="h-3 w-3" />
-                  </Badge>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="glass-card border-white/10">
                   {Object.entries(statusLabels).map(([key, label]) => (
@@ -587,13 +587,12 @@ export function ProjectDetailsDialog({
                           
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Badge 
-                                variant="outline" 
-                                className="cursor-pointer hover:bg-primary/20 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1 shrink-0"
+                              <button 
+                                className={`${artStatusColors[art.status] || ''} cursor-pointer hover:bg-primary/20 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1 shrink-0 px-2.5 py-0.5 text-xs rounded-full border`}
                               >
                                 {artStatusLabels[art.status] || art.status}
                                 <ChevronDown className="h-3 w-3" />
-                              </Badge>
+                              </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card border-white/10">
                               <DropdownMenuItem onClick={() => onUpdateArtStatus(art.id, 'pending')}>

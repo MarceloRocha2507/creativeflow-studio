@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,7 @@ export function RenewPlanDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Renovar Plano - {userName}</DialogTitle>
+          <DialogDescription className="sr-only">Formulário para renovação de plano do usuário</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

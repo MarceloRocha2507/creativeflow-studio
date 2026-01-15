@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Search, Users, Eye, UserPlus, RefreshCw, UserX, UserCheck } from "lucide-react";
 import { format } from "date-fns";
@@ -269,6 +270,7 @@ export default function AdminUsers() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Detalhes do Usuário</DialogTitle>
+              <DialogDescription className="sr-only">Informações detalhadas do usuário selecionado</DialogDescription>
             </DialogHeader>
             {selectedUser && (
               <div className="space-y-4">
