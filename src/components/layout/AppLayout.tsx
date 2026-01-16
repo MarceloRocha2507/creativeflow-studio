@@ -1,25 +1,46 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { useNotificationChecker } from '@/hooks/useNotificationChecker';
+import { cn } from '@/lib/utils';
+
+const SIDEBAR_COLLAPSED_KEY = 'designflow-sidebar-collapsed';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  // Check and create notifications on mount
   useNotificationChecker();
+  
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+  });
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setIsCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');
+    };
+    
+    window.addEventListener('storage', handleStorage);
+    
+    // Also listen for changes within the same tab
+    const interval = setInterval(() => {
+      const current = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+      if (current !== isCollapsed) {
+        setIsCollapsed(current);
+      }
+    }, 100);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
+  }, [isCollapsed]);
 
   return (
-    <div className="min-h-screen gradient-mesh">
-      {/* Background decorations */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-1/2 -left-40 h-80 w-80 rounded-full bg-accent/5 blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 h-72 w-72 rounded-full bg-primary/3 blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar />
@@ -29,9 +50,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       <MobileNav />
 
       {/* Main Content */}
-      <main className="relative lg:pl-64">
+      <main className={cn(
+        'min-h-screen transition-all duration-200',
+        'lg:pl-60',
+        isCollapsed && 'lg:pl-16'
+      )}>
         <div className="min-h-screen pt-14 lg:pt-0">
-          <div className="p-4 lg:p-8">
+          <div className="p-4 lg:p-6 max-w-7xl mx-auto">
             {children}
           </div>
         </div>

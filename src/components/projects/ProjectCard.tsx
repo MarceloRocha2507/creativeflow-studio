@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MoreVertical, Pencil, Trash2, Eye, Package, Calendar, DollarSign, User, AlertCircle, Clock, Briefcase } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2, Eye, Calendar, DollarSign, User, Clock } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { statusColors, statusLabels, statusAccentColors, priorityLabels } from '@/lib/projectStatus';
+import { statusColors, statusLabels, priorityLabels, priorityColors } from '@/lib/projectStatus';
+import { cn } from '@/lib/utils';
 
 interface Project {
   id: string;
@@ -44,25 +45,16 @@ function getDeadlineInfo(deadline: string | null, status: string) {
   const days = differenceInDays(deadlineDate, today);
   
   if (days < 0) {
-    return { text: `${Math.abs(days)}d atrasado`, color: 'text-red-400 bg-red-500/15', icon: true, urgent: true };
+    return { text: `${Math.abs(days)}d atrasado`, variant: 'destructive' as const, urgent: true };
   } else if (days === 0) {
-    return { text: 'Hoje', color: 'text-red-400 bg-red-500/15', icon: true, urgent: true };
+    return { text: 'Hoje', variant: 'destructive' as const, urgent: true };
   } else if (days <= 3) {
-    return { text: `em ${days}d`, color: 'text-amber-400 bg-amber-500/15', icon: false, urgent: false };
+    return { text: `${days}d`, variant: 'warning' as const, urgent: false };
   } else if (days <= 7) {
-    return { text: `em ${days}d`, color: 'text-yellow-400 bg-yellow-500/15', icon: false, urgent: false };
+    return { text: `${days}d`, variant: 'secondary' as const, urgent: false };
   } else {
-    return { text: `em ${days}d`, color: 'text-muted-foreground bg-muted/30', icon: false, urgent: false };
+    return { text: `${days}d`, variant: 'outline' as const, urgent: false };
   }
-}
-
-function getBillingTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    fixed: 'Valor fixo',
-    hourly: 'Por hora',
-    package: 'Pacote'
-  };
-  return labels[type] || type;
 }
 
 export function ProjectCard({ project, index, completedArts = 0, onView, onEdit, onDelete }: ProjectCardProps) {
@@ -74,148 +66,132 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
     ? project.package_total_value 
     : project.budget || project.hourly_rate;
 
+  // Status dot color
+  const statusDotColors: Record<string, string> = {
+    pending: 'bg-yellow-500',
+    in_progress: 'bg-blue-500',
+    pending_approval: 'bg-purple-500',
+    revision: 'bg-orange-500',
+    approved: 'bg-emerald-500',
+    completed: 'bg-green-500',
+    cancelled: 'bg-gray-500',
+  };
+
   return (
     <Card 
-      className="group relative overflow-hidden cursor-pointer bg-card border border-border rounded-lg"
-      style={{ animationDelay: `${index * 50}ms` }}
+      className="group cursor-pointer bg-card border-border hover:border-primary/30 transition-all duration-150"
       onClick={() => onView(project)}
     >
-      {/* Status accent strip */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusAccentColors[project.status] || 'bg-muted-foreground'}`} />
-      
-      <CardHeader className="flex flex-row items-start justify-between pb-2 pl-5">
-        <div className="space-y-1 flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold truncate">
-              {project.name}
-            </CardTitle>
-          </div>
-          {project.clients?.name && (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <User className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{project.clients.name}</span>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              {/* Status dot */}
+              <div className={cn(
+                'h-2 w-2 rounded-full shrink-0',
+                statusDotColors[project.status] || 'bg-muted-foreground'
+              )} />
+              <CardTitle className="text-base font-semibold truncate">
+                {project.name}
+              </CardTitle>
             </div>
-          )}
+            {project.clients?.name && (
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <User className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{project.clients.name}</span>
+              </div>
+            )}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(project); }}>
+                <Eye className="mr-2 h-4 w-4" />
+                Ver detalhes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} 
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(project); }}>
-              <Eye className="mr-2 h-4 w-4" />
-              Ver detalhes
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} 
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </CardHeader>
       
-      <CardContent className="space-y-3 pl-5">
-        {/* Description preview */}
-        {project.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {project.description}
-          </p>
-        )}
-
-        {/* Status and Priority row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge 
-            variant="outline" 
-            className={statusColors[project.status] || 'bg-muted/50 text-muted-foreground border-border/50'}
-          >
+      <CardContent className="space-y-3">
+        {/* Badges row */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="outline" className={statusColors[project.status]}>
             {statusLabels[project.status] || project.status}
           </Badge>
           
           {(project.priority === 'high' || project.priority === 'urgent') && (
-            <Badge 
-              variant="outline" 
-              className={project.priority === 'urgent' 
-                ? 'bg-red-500/15 text-red-400 border-red-500/30' 
-                : 'bg-orange-500/15 text-orange-400 border-orange-500/30'
-              }
-            >
-              <AlertCircle className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className={priorityColors[project.priority]}>
               {priorityLabels[project.priority]}
             </Badge>
           )}
 
           {project.project_type === 'package' && (
-            <Badge variant="outline" className="bg-violet-500/15 text-violet-400 border-violet-500/30">
-              <Package className="h-3 w-3 mr-1" />
-              {project.package_total_arts} artes
+            <Badge variant="secondary" className="text-xs">
+              {completedArts}/{totalArts} artes
             </Badge>
-          )}
-        </div>
-
-        {/* Project type and billing info */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Briefcase className="h-3 w-3" />
-            <span>{getBillingTypeLabel(project.billing_type)}</span>
-          </div>
-          {project.start_date && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>Início: {format(new Date(project.start_date), 'dd/MM/yy', { locale: ptBR })}</span>
-            </div>
           )}
         </div>
 
         {/* Progress bar for packages */}
         {project.project_type === 'package' && totalArts > 0 && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Progresso das artes</span>
-              <span className="font-medium">{completedArts}/{totalArts} concluídas</span>
-            </div>
-            <Progress value={progressPercent} className="h-2" />
-          </div>
+          <Progress value={progressPercent} className="h-1.5" />
         )}
 
-        {/* Footer with deadline and value */}
+        {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-border">
           {/* Deadline */}
-          {project.deadline ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${deadlineInfo?.color || 'text-muted-foreground'}`}>
-                  {deadlineInfo?.icon ? <Clock className="h-3.5 w-3.5" /> : <Calendar className="h-3.5 w-3.5" />}
-                  <span>{deadlineInfo?.text || format(new Date(project.deadline), 'dd MMM', { locale: ptBR })}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                Prazo: {format(new Date(project.deadline), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <span className="text-xs text-muted-foreground">Sem prazo</span>
-          )}
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            {project.deadline ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn(
+                    'flex items-center gap-1',
+                    deadlineInfo?.urgent && 'text-destructive'
+                  )}>
+                    {deadlineInfo?.urgent ? (
+                      <Clock className="h-3.5 w-3.5" />
+                    ) : (
+                      <Calendar className="h-3.5 w-3.5" />
+                    )}
+                    <span className="text-xs font-medium">{deadlineInfo?.text}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {format(new Date(project.deadline), "dd 'de' MMMM", { locale: ptBR })}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <span className="text-xs">Sem prazo</span>
+            )}
+          </div>
           
           {/* Value */}
           {value ? (
-            <div className="flex items-center gap-1 text-emerald-500 font-semibold text-sm">
-              <DollarSign className="h-4 w-4" />
+            <div className="flex items-center gap-1 text-sm font-semibold text-emerald-500">
               <span>
                 R$ {value.toLocaleString('pt-BR')}
                 {project.billing_type === 'hourly' && '/h'}
               </span>
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground">Sem valor</span>
+            <span className="text-xs text-muted-foreground">--</span>
           )}
         </div>
       </CardContent>
