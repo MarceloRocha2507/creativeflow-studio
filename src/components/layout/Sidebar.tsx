@@ -15,7 +15,6 @@ import {
   ScrollText,
   ChevronDown,
   Store,
-  Settings,
   PanelLeftClose,
   PanelLeft,
 } from 'lucide-react';
@@ -339,53 +338,7 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border p-2 space-y-1">
-          {/* Theme Toggle */}
-          <ThemeToggle collapsed={isCollapsed} />
-
-          {/* Notifications */}
-          {isCollapsed ? (
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/notifications"
-                  className={cn(
-                    'relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
-                    location.pathname === '/notifications'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                  )}
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
-                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                    </span>
-                  )}
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Notificações</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to="/notifications"
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                location.pathname === '/notifications'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-              )}
-            >
-              <Bell className="h-5 w-5 shrink-0" />
-              <span className="flex-1">Notificações</span>
-              {unreadNotifications > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-medium text-destructive-foreground">
-                  {unreadNotifications}
-                </span>
-              )}
-            </Link>
-          )}
-
+        <div className="border-t border-border p-2">
           {/* Profile */}
           {isCollapsed ? (
             <Tooltip delayDuration={0}>
@@ -413,7 +366,7 @@ export function Sidebar() {
             <Link
               to="/profile"
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
                 location.pathname === '/profile'
                   ? 'bg-primary/10'
                   : 'hover:bg-secondary'
@@ -425,39 +378,56 @@ export function Sidebar() {
                   {getInitials(profile?.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{profile?.full_name || 'Usuário'}</p>
-                <p className="text-xs text-muted-foreground">Ver perfil</p>
-              </div>
-              <Settings className="h-4 w-4 text-muted-foreground" />
+              <span className="flex-1 text-sm font-medium truncate">{profile?.full_name || 'Usuário'}</span>
             </Link>
           )}
 
-          {/* Sign Out */}
-          {isCollapsed ? (
+          {/* Action buttons in a row */}
+          <div className={cn(
+            'flex items-center gap-1 pt-1',
+            isCollapsed ? 'flex-col' : 'justify-between px-1'
+          )}>
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
+            {/* Notifications */}
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/notifications"
+                  className={cn(
+                    'relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                    location.pathname === '/notifications'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    </span>
+                  )}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side={isCollapsed ? 'right' : 'top'}>Notificações</TooltipContent>
+            </Tooltip>
+
+            {/* Sign Out */}
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   onClick={signOut}
                 >
-                  <LogOut className="h-5 w-5" />
+                  <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Sair</TooltipContent>
+              <TooltipContent side={isCollapsed ? 'right' : 'top'}>Sair</TooltipContent>
             </Tooltip>
-          ) : (
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              onClick={signOut}
-            >
-              <LogOut className="h-5 w-5" />
-              Sair
-            </Button>
-          )}
+          </div>
         </div>
       </div>
     </aside>
