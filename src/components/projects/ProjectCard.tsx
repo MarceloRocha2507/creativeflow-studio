@@ -112,7 +112,7 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 hover:scale-110"
                   onClick={(e) => { e.stopPropagation(); onView(project); }}
                 >
                   <Eye className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 hover:scale-110"
                   onClick={(e) => { e.stopPropagation(); onEdit(project); }}
                 >
                   <Pencil className="h-4 w-4" />
@@ -140,7 +140,7 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-200 hover:scale-110"
                   onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"
+                className="h-7 px-2 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-105"
                 onClick={(e) => { e.stopPropagation(); onComplete(project.id); }}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
@@ -225,7 +225,7 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs text-cyan-500 hover:text-cyan-600 hover:bg-cyan-500/10"
+                className="h-7 px-2 text-xs text-cyan-500 hover:text-cyan-600 hover:bg-cyan-500/10 transition-all duration-200 hover:scale-105"
                 onClick={(e) => { e.stopPropagation(); onReopen(project.id); }}
               >
                 <RotateCcw className="h-3.5 w-3.5 mr-1" />
