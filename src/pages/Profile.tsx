@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Camera, Loader2, LogOut, Lock, User, Bell, Settings, Sun, Moon } from 'lucide-react';
+import { useAdmin } from '@/hooks/useAdmin';
+import { Camera, Loader2, LogOut, Lock, User, Bell, Settings, Sun, Moon, ImageIcon, Building2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { z } from 'zod';
 import {
@@ -65,10 +66,14 @@ export default function Profile() {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingSystemLogo, setIsUploadingSystemLogo] = useState(false);
+  const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const systemLogoInputRef = useRef<HTMLInputElement>(null);
 
   // Profile form
   const [fullName, setFullName] = useState('');
@@ -88,9 +93,10 @@ export default function Profile() {
   const fetchData = async () => {
     if (!user) return;
 
-    const [profileRes, notifRes] = await Promise.all([
+    const [profileRes, notifRes, shopRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', user.id).single(),
       supabase.from('notification_settings').select('*').eq('user_id', user.id).single(),
+      supabase.from('shop_status').select('logo_url').limit(1).single(),
     ]);
 
     if (profileRes.data) {
@@ -108,6 +114,10 @@ export default function Profile() {
       });
     }
 
+    if (shopRes.data) {
+      setSystemLogo(shopRes.data.logo_url);
+    }
+
     setIsLoading(false);
   };
 
@@ -120,6 +130,10 @@ export default function Profile() {
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleSystemLogoClick = () => {
+    systemLogoInputRef.current?.click();
   };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,6 +183,56 @@ export default function Profile() {
       toast({ variant: 'destructive', title: 'Erro ao atualizar avatar', description: error.message });
     } finally {
       setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleSystemLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Por favor, selecione uma imagem' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'A imagem deve ter no máximo 5MB' });
+      return;
+    }
+
+    setIsUploadingSystemLogo(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `system/logo-${Date.now()}.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update shop_status with new logo URL
+      const { error: updateError } = await supabase.from('shop_status')
+        .update({ logo_url: publicUrl })
+        .not('id', 'is', null); // Update all rows (there should be only one)
+
+      if (updateError) throw updateError;
+
+      setSystemLogo(publicUrl);
+      toast({ title: 'Logo do sistema atualizada!' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Erro ao atualizar logo', description: error.message });
+    } finally {
+      setIsUploadingSystemLogo(false);
     }
   };
 
@@ -280,34 +344,8 @@ export default function Profile() {
   return (
     <AppLayout>
       <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
-        {/* Header Compacto com Avatar */}
+        {/* Header Compacto */}
         <div className="flex items-center gap-4 mb-2">
-          <div className="relative group">
-            <Avatar className="h-16 w-16 border-2 border-primary/30 shadow-lg">
-              <AvatarImage src={profile?.logo_url || undefined} />
-              <AvatarFallback className="text-lg gradient-primary text-primary-foreground">
-                {getInitials(profile?.full_name || null, user?.email || null)}
-              </AvatarFallback>
-            </Avatar>
-            <button
-              onClick={handleAvatarClick}
-              disabled={isUploadingAvatar}
-              className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              {isUploadingAvatar ? (
-                <Loader2 className="h-5 w-5 text-white animate-spin" />
-              ) : (
-                <Camera className="h-5 w-5 text-white" />
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarUpload}
-              className="hidden"
-            />
-          </div>
           <div>
             <h1 className="text-xl font-bold text-gradient">
               {profile?.full_name || 'Seu Nome'}
@@ -315,6 +353,123 @@ export default function Profile() {
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>
+
+        {/* Imagens Section */}
+        <Card className="glass-card glass-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Imagens</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Gerencie suas fotos de perfil{isAdmin && ' e logo do sistema'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className={`grid gap-4 ${isAdmin ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
+              {/* Profile Avatar */}
+              <div className="flex flex-col items-center p-4 rounded-lg glass glass-border">
+                <div className="relative group mb-3">
+                  <Avatar className="h-24 w-24 border-2 border-primary/30 shadow-lg">
+                    <AvatarImage src={profile?.logo_url || undefined} />
+                    <AvatarFallback className="text-2xl gradient-primary text-primary-foreground">
+                      {getInitials(profile?.full_name || null, user?.email || null)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    onClick={handleAvatarClick}
+                    disabled={isUploadingAvatar}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-6 w-6 text-white" />
+                    )}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </div>
+                <Label className="text-sm font-medium">Foto do Perfil</Label>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  Clique na imagem para alterar
+                </p>
+                <Button
+                  onClick={handleAvatarClick}
+                  disabled={isUploadingAvatar}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 text-xs"
+                >
+                  {isUploadingAvatar ? (
+                    <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Enviando...</>
+                  ) : (
+                    <><Camera className="mr-1 h-3 w-3" />Alterar Foto</>
+                  )}
+                </Button>
+              </div>
+
+              {/* System Logo (Admin Only) */}
+              {isAdmin && (
+                <div className="flex flex-col items-center p-4 rounded-lg glass glass-border">
+                  <div className="relative group mb-3">
+                    <div className="h-24 w-24 rounded-lg border-2 border-primary/30 shadow-lg overflow-hidden bg-muted/30 flex items-center justify-center">
+                      {systemLogo ? (
+                        <img 
+                          src={systemLogo} 
+                          alt="Logo do Sistema" 
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <Building2 className="h-10 w-10 text-muted-foreground" />
+                      )}
+                    </div>
+                    <button
+                      onClick={handleSystemLogoClick}
+                      disabled={isUploadingSystemLogo}
+                      className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    >
+                      {isUploadingSystemLogo ? (
+                        <Loader2 className="h-6 w-6 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-white" />
+                      )}
+                    </button>
+                    <input
+                      ref={systemLogoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSystemLogoUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  <Label className="text-sm font-medium">Logo do Sistema</Label>
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    Visível para todos os usuários
+                  </p>
+                  <Button
+                    onClick={handleSystemLogoClick}
+                    disabled={isUploadingSystemLogo}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 text-xs"
+                  >
+                    {isUploadingSystemLogo ? (
+                      <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Enviando...</>
+                    ) : (
+                      <><Camera className="mr-1 h-3 w-3" />Alterar Logo</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Personal Information */}
         <Card className="glass-card glass-border">
