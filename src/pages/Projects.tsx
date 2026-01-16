@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, FolderKanban, Users, Package, FileText, LayoutGrid, List, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, FolderKanban, Users, Package, FileText, LayoutGrid, List, ArrowUpDown, Image, Smartphone, Film, Grid3X3, Type, Layers, Square } from 'lucide-react';
+import { artStatusLabels as importedArtStatusLabels, artStatusColors } from '@/lib/projectStatus';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProjectDetailsDialog } from '@/components/projects/ProjectDetailsDialog';
@@ -168,6 +169,8 @@ export default function Projects() {
   const [packageTotalArts, setPackageTotalArts] = useState('');
   const [artNames, setArtNames] = useState<string[]>([]);
   const [artTypes, setArtTypes] = useState<string[]>([]);
+  const [artIds, setArtIds] = useState<string[]>([]);
+  const [artStatuses, setArtStatuses] = useState<string[]>([]);
   
   // Form wizard step
   const [formStep, setFormStep] = useState(1);
@@ -243,6 +246,8 @@ export default function Projects() {
     setPackageTotalArts('');
     setArtNames([]);
     setArtTypes([]);
+    setArtIds([]);
+    setArtStatuses([]);
     setFormStep(1);
   };
 
@@ -257,13 +262,15 @@ export default function Projects() {
   const loadProjectArts = async (projectId: string) => {
     const { data } = await supabase
       .from('project_arts')
-      .select('name, order_index, art_type')
+      .select('id, name, order_index, art_type, status')
       .eq('project_id', projectId)
       .order('order_index', { ascending: true });
     
     if (data && data.length > 0) {
+      setArtIds(data.map(art => art.id));
       setArtNames(data.map(art => art.name));
       setArtTypes(data.map(art => art.art_type || 'feed'));
+      setArtStatuses(data.map(art => art.status || 'pending'));
     }
   };
 
@@ -428,12 +435,19 @@ export default function Projects() {
     urgent: 'Urgente',
   };
 
-  const artStatusLabels: Record<string, string> = {
-    pending: 'Pendente',
-    in_progress: 'Em andamento',
-    pending_approval: 'Enviado para Aprovação',
-    completed: 'Concluída',
-    approved: 'Aprovada',
+  // Use imported artStatusLabels from projectStatus.ts for consistency
+  const localArtStatusLabels = importedArtStatusLabels;
+
+  // Art type icons and labels
+  const artTypeConfig: Record<string, { icon: typeof Image; label: string }> = {
+    feed: { icon: Image, label: 'Feed' },
+    story: { icon: Smartphone, label: 'Story' },
+    flyer: { icon: FileText, label: 'Flyer' },
+    banner: { icon: Layers, label: 'Banner' },
+    logo: { icon: Type, label: 'Logo' },
+    reels: { icon: Film, label: 'Reels' },
+    carrossel: { icon: Grid3X3, label: 'Carrossel' },
+    outro: { icon: Square, label: 'Outro' },
   };
 
   const submitProject = async () => {
@@ -469,23 +483,41 @@ export default function Projects() {
         return;
       }
 
-      // Update arts if package
+      // Update arts if package - preserve existing statuses!
       if (projectType === 'package') {
-        // Delete existing arts
-        await supabase.from('project_arts').delete().eq('project_id', editingProject.id);
-        
-        // Insert new arts
-        const artsToInsert = artNames.map((artName, index) => ({
-          project_id: editingProject.id,
-          user_id: user.id,
-          name: artName || `Arte ${String(index + 1).padStart(2, '0')}`,
-          order_index: index + 1,
-          status: 'pending',
-          art_type: artTypes[index] || 'feed',
-        }));
+        const existingCount = artIds.length;
+        const newCount = artNames.length;
 
-        if (artsToInsert.length > 0) {
-          await supabase.from('project_arts').insert(artsToInsert);
+        // Update existing arts (preserving their status)
+        for (let i = 0; i < Math.min(existingCount, newCount); i++) {
+          await supabase
+            .from('project_arts')
+            .update({
+              name: artNames[i] || `Arte ${String(i + 1).padStart(2, '0')}`,
+              art_type: artTypes[i] || 'feed',
+              order_index: i + 1,
+              // status is NOT updated here - preserving it!
+            })
+            .eq('id', artIds[i]);
+        }
+
+        // Insert new arts if quantity increased
+        if (newCount > existingCount) {
+          const newArts = artNames.slice(existingCount).map((artName, idx) => ({
+            project_id: editingProject.id,
+            user_id: user.id,
+            name: artName || `Arte ${String(existingCount + idx + 1).padStart(2, '0')}`,
+            order_index: existingCount + idx + 1,
+            status: 'pending',
+            art_type: artTypes[existingCount + idx] || 'feed',
+          }));
+          await supabase.from('project_arts').insert(newArts);
+        }
+
+        // Delete removed arts if quantity decreased
+        if (existingCount > newCount) {
+          const idsToDelete = artIds.slice(newCount);
+          await supabase.from('project_arts').delete().in('id', idsToDelete);
         }
       }
 
@@ -785,42 +817,58 @@ export default function Projects() {
                               <Label className="text-primary text-sm">Nomes das Artes ({artNames.length})</Label>
                             </div>
                             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                              {artNames.map((artName, index) => (
-                                <div key={index} className="flex gap-2">
-                                  <Select 
-                                    value={artTypes[index] || 'feed'} 
-                                    onValueChange={(value) => {
-                                      const newTypes = [...artTypes];
-                                      newTypes[index] = value;
-                                      setArtTypes(newTypes);
-                                    }}
-                                  >
-                                    <SelectTrigger className="w-28 glass border-white/10 text-xs">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="glass-card border-white/10">
-                                      <SelectItem value="feed">Feed</SelectItem>
-                                      <SelectItem value="story">Story</SelectItem>
-                                      <SelectItem value="flyer">Flyer</SelectItem>
-                                      <SelectItem value="banner">Banner</SelectItem>
-                                      <SelectItem value="logo">Logo</SelectItem>
-                                      <SelectItem value="reels">Reels</SelectItem>
-                                      <SelectItem value="carrossel">Carrossel</SelectItem>
-                                      <SelectItem value="outro">Outro</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <Input
-                                    value={artName}
-                                    onChange={(e) => {
-                                      const newNames = [...artNames];
-                                      newNames[index] = toTitleCase(e.target.value);
-                                      setArtNames(newNames);
-                                    }}
-                                    className="flex-1 glass border-white/10"
-                                    placeholder={`Arte ${String(index + 1).padStart(2, '0')}`}
-                                  />
-                                </div>
-                              ))}
+                              {artNames.map((artName, index) => {
+                                const artTypeKey = artTypes[index] || 'feed';
+                                const IconComponent = artTypeConfig[artTypeKey]?.icon || Image;
+                                return (
+                                  <div key={index} className="flex gap-2 items-center">
+                                    <Select 
+                                      value={artTypeKey} 
+                                      onValueChange={(value) => {
+                                        const newTypes = [...artTypes];
+                                        newTypes[index] = value;
+                                        setArtTypes(newTypes);
+                                      }}
+                                    >
+                                      <SelectTrigger className="w-32 glass border-white/10 text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <IconComponent className="h-3 w-3" />
+                                          <span>{artTypeConfig[artTypeKey]?.label || 'Feed'}</span>
+                                        </div>
+                                      </SelectTrigger>
+                                      <SelectContent className="glass-card border-white/10">
+                                        {Object.entries(artTypeConfig).map(([value, { icon: Icon, label }]) => (
+                                          <SelectItem key={value} value={value}>
+                                            <span className="flex items-center gap-2">
+                                              <Icon className="h-3 w-3" />
+                                              {label}
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Input
+                                      value={artName}
+                                      onChange={(e) => {
+                                        const newNames = [...artNames];
+                                        newNames[index] = toTitleCase(e.target.value);
+                                        setArtNames(newNames);
+                                      }}
+                                      className="flex-1 glass border-white/10"
+                                      placeholder={`Arte ${String(index + 1).padStart(2, '0')}`}
+                                    />
+                                    {/* Show status badge when editing */}
+                                    {editingProject && artStatuses[index] && (
+                                      <Badge 
+                                        variant="outline" 
+                                        className={`text-xs shrink-0 ${artStatusColors[artStatuses[index]] || ''} bg-opacity-20`}
+                                      >
+                                        {localArtStatusLabels[artStatuses[index]] || artStatuses[index]}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                             <p className="text-xs text-muted-foreground">
                               💡 Selecione o tipo e nomeie cada arte
