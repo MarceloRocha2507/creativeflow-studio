@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MoreVertical, Pencil, Trash2, Eye, Calendar, DollarSign, User, Clock } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2, Eye, Calendar, DollarSign, User, Clock, CheckCircle2, RotateCcw } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { statusColors, statusLabels, priorityLabels, priorityColors } from '@/lib/projectStatus';
@@ -34,6 +34,8 @@ interface ProjectCardProps {
   onView: (project: Project) => void;
   onEdit: (project: Project) => void;
   onDelete: (id: string) => void;
+  onComplete?: (id: string) => void;
+  onReopen?: (id: string) => void;
 }
 
 function getDeadlineInfo(deadline: string | null, status: string) {
@@ -57,7 +59,7 @@ function getDeadlineInfo(deadline: string | null, status: string) {
   }
 }
 
-export function ProjectCard({ project, index, completedArts = 0, onView, onEdit, onDelete }: ProjectCardProps) {
+export function ProjectCard({ project, index, completedArts = 0, onView, onEdit, onDelete, onComplete, onReopen }: ProjectCardProps) {
   const deadlineInfo = getDeadlineInfo(project.deadline, project.status);
   const totalArts = project.package_total_arts || 0;
   const progressPercent = totalArts > 0 ? (completedArts / totalArts) * 100 : 0;
@@ -79,7 +81,10 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
 
   return (
     <Card 
-      className="group cursor-pointer bg-card border-border hover:border-primary/30 transition-all duration-150"
+      className={cn(
+        "group cursor-pointer bg-card border-border hover:border-primary/30 transition-all duration-150",
+        project.status === 'completed' && "opacity-70 bg-emerald-500/5 border-emerald-500/20"
+      )}
       onClick={() => onView(project)}
     >
       <CardHeader className="pb-3">
@@ -117,6 +122,24 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
+              {project.status !== 'completed' && project.status !== 'cancelled' && onComplete && (
+                <DropdownMenuItem 
+                  onClick={(e) => { e.stopPropagation(); onComplete(project.id); }}
+                  className="text-emerald-500 focus:text-emerald-500"
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Marcar como Concluído
+                </DropdownMenuItem>
+              )}
+              {project.status === 'completed' && onReopen && (
+                <DropdownMenuItem 
+                  onClick={(e) => { e.stopPropagation(); onReopen(project.id); }}
+                  className="text-cyan-500 focus:text-cyan-500"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reabrir Projeto
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem 
                 onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} 
                 className="text-destructive focus:text-destructive"
