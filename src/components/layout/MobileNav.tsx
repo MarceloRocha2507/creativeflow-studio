@@ -25,7 +25,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { ThemeToggle } from '@/components/ThemeToggle';
+
 
 const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -245,7 +245,7 @@ export function MobileNav() {
               </nav>
 
               <div className="border-t border-border p-3 space-y-1">
-                <ThemeToggle />
+                
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
