@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -175,6 +176,10 @@ export default function Projects() {
   // Form wizard step
   const [formStep, setFormStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Complete/Reopen state
+  const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
+  const [confirmReopenId, setConfirmReopenId] = useState<string | null>(null);
   // Effect to manage art names array based on package total
   useEffect(() => {
     if (projectType === 'package') {
@@ -570,6 +575,40 @@ export default function Projects() {
       toast({ title: 'Projeto excluído com sucesso!' });
       fetchData();
     }
+  };
+
+  const handleMarkAsCompleted = async () => {
+    if (!confirmCompleteId) return;
+    
+    const { error } = await supabase
+      .from('projects')
+      .update({ status: 'completed', completed_at: new Date().toISOString() })
+      .eq('id', confirmCompleteId);
+    
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao concluir projeto', description: error.message });
+    } else {
+      toast({ title: 'Projeto marcado como concluído!' });
+      fetchData();
+    }
+    setConfirmCompleteId(null);
+  };
+
+  const handleReopenProject = async () => {
+    if (!confirmReopenId) return;
+    
+    const { error } = await supabase
+      .from('projects')
+      .update({ status: 'in_progress', completed_at: null })
+      .eq('id', confirmReopenId);
+    
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao reabrir projeto', description: error.message });
+    } else {
+      toast({ title: 'Projeto reaberto!' });
+      fetchData();
+    }
+    setConfirmReopenId(null);
   };
 
   // Filter projects
@@ -1085,6 +1124,8 @@ export default function Projects() {
             onView={openViewDialog}
             onEdit={openEditDialog}
             onDelete={handleDelete}
+            onComplete={(id) => setConfirmCompleteId(id)}
+            onReopen={(id) => setConfirmReopenId(id)}
           />
         ) : (
           (() => {
@@ -1099,6 +1140,8 @@ export default function Projects() {
                 onView={openViewDialog}
                 onEdit={openEditDialog}
                 onDelete={handleDelete}
+                onComplete={(id) => setConfirmCompleteId(id)}
+                onReopen={(id) => setConfirmReopenId(id)}
               />
             );
 
@@ -1157,6 +1200,42 @@ export default function Projects() {
           onUpdateProjectName={updateProjectName}
           onUpdateArtName={updateArtName}
         />
+
+        {/* Complete Confirmation Dialog */}
+        <AlertDialog open={!!confirmCompleteId} onOpenChange={() => setConfirmCompleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Concluir projeto?</AlertDialogTitle>
+              <AlertDialogDescription>
+                O projeto será marcado como concluído. Você poderá reabri-lo depois se necessário.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleMarkAsCompleted} className="bg-emerald-600 hover:bg-emerald-700">
+                Concluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Reopen Confirmation Dialog */}
+        <AlertDialog open={!!confirmReopenId} onOpenChange={() => setConfirmReopenId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reabrir projeto?</AlertDialogTitle>
+              <AlertDialogDescription>
+                O projeto será reaberto e voltará para "Em Andamento".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleReopenProject}>
+                Reabrir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );

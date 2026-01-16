@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Pencil, Trash2, Eye, Package, Calendar, AlertCircle } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2, Eye, Package, Calendar, AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { statusColors, statusLabels, priorityColors, priorityLabels } from '@/lib/projectStatus';
@@ -26,6 +26,8 @@ interface ProjectListViewProps {
   onView: (project: Project) => void;
   onEdit: (project: Project) => void;
   onDelete: (id: string) => void;
+  onComplete?: (id: string) => void;
+  onReopen?: (id: string) => void;
 }
 
 function getDeadlineInfo(deadline: string | null) {
@@ -49,7 +51,7 @@ function getDeadlineInfo(deadline: string | null) {
   }
 }
 
-export function ProjectListView({ projects, onView, onEdit, onDelete }: ProjectListViewProps) {
+export function ProjectListView({ projects, onView, onEdit, onDelete, onComplete, onReopen }: ProjectListViewProps) {
   return (
     <div className="rounded-lg border border-white/10 overflow-hidden">
       <Table>
@@ -73,7 +75,9 @@ export function ProjectListView({ projects, onView, onEdit, onDelete }: ProjectL
             return (
               <TableRow 
                 key={project.id} 
-                className="border-white/5 cursor-pointer hover:bg-muted/30 transition-colors"
+                className={`border-white/5 cursor-pointer hover:bg-muted/30 transition-colors ${
+                  project.status === 'completed' ? 'opacity-70 bg-emerald-500/5' : ''
+                }`}
                 onClick={() => onView(project)}
               >
                 <TableCell className="font-medium">
@@ -133,6 +137,24 @@ export function ProjectListView({ projects, onView, onEdit, onDelete }: ProjectL
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar
                       </DropdownMenuItem>
+                      {project.status !== 'completed' && project.status !== 'cancelled' && onComplete && (
+                        <DropdownMenuItem 
+                          onClick={(e) => { e.stopPropagation(); onComplete(project.id); }}
+                          className="text-emerald-500 focus:text-emerald-500"
+                        >
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Marcar como Concluído
+                        </DropdownMenuItem>
+                      )}
+                      {project.status === 'completed' && onReopen && (
+                        <DropdownMenuItem 
+                          onClick={(e) => { e.stopPropagation(); onReopen(project.id); }}
+                          className="text-cyan-500 focus:text-cyan-500"
+                        >
+                          <RotateCcw className="mr-2 h-4 w-4" />
+                          Reabrir Projeto
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem 
                         onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} 
                         className="text-destructive focus:text-destructive"
