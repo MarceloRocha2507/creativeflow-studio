@@ -222,7 +222,7 @@ export default function Profile() {
 
       // Update shop_status with new logo URL
       const { error: updateError } = await supabase.from('shop_status')
-        .update({ logo_url: publicUrl })
+        .update({ logo_url: publicUrl, updated_by: user.id })
         .not('id', 'is', null); // Update all rows (there should be only one)
 
       if (updateError) throw updateError;
