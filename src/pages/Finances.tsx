@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet } from 'lucide-react';
+import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -306,26 +307,57 @@ export default function Finances() {
               </div>
             ) : (
               <div className="space-y-2">
-                {payments.map((payment) => (
+                {[...payments]
+                  .sort((a, b) => {
+                    const statusOrder: Record<string, number> = { pending: 0, partial: 1, paid: 2 };
+                    return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+                  })
+                  .map((payment) => (
                   <div 
                     key={payment.id} 
-                    className="flex items-center justify-between rounded-lg border border-border bg-background p-4 hover:bg-muted/50 transition-colors"
+                    className={cn(
+                      "relative flex items-center justify-between rounded-lg border p-4 transition-colors overflow-hidden",
+                      payment.status === 'pending' 
+                        ? "border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10" 
+                        : payment.status === 'partial'
+                          ? "border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10"
+                          : "border-border bg-background hover:bg-muted/50"
+                    )}
                   >
-                    <div className="flex-1 min-w-0">
+                    {/* Indicador lateral de status */}
+                    {payment.status === 'pending' && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
+                    )}
+                    {payment.status === 'partial' && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
+                    )}
+                    
+                    <div className="flex-1 min-w-0 pl-2">
                       <div className="flex items-center gap-2">
+                        {payment.status === 'pending' && (
+                          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                        )}
                         <span className="font-medium truncate">{payment.projects?.name}</span>
                         <Badge variant="outline" className={statusColors[payment.status]}>
                           {statusLabels[payment.status]}
                         </Badge>
                       </div>
                       {payment.payment_date && (
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className={cn(
+                          "text-sm text-muted-foreground mt-0.5",
+                          payment.status === 'pending' && "pl-6"
+                        )}>
                           {format(new Date(payment.payment_date), "dd 'de' MMMM", { locale: ptBR })}
                         </p>
                       )}
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`text-lg font-bold ${payment.status === 'paid' ? 'text-emerald-500' : ''}`}>
+                      <span className={cn(
+                        "text-lg font-bold",
+                        payment.status === 'paid' && "text-emerald-500",
+                        payment.status === 'pending' && "text-amber-500",
+                        payment.status === 'partial' && "text-blue-500"
+                      )}>
                         {formatCurrency(payment.amount)}
                       </span>
                       <DropdownMenu>
