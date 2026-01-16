@@ -9,15 +9,15 @@ import {
   CheckSquare,
   DollarSign,
   LogOut,
-  Sparkles,
   Bell,
   Shield,
   Key,
   ScrollText,
   ChevronDown,
-  ChevronRight,
   Store,
   Settings,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -29,20 +29,21 @@ import {
 } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
+const SIDEBAR_COLLAPSED_KEY = 'designflow-sidebar-collapsed';
 const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
 
-// Menu principal reduzido
+// Main navigation
 const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Financeiro', href: '/finances', icon: DollarSign },
 ];
 
-// Submenu de Projetos
+// Projects submenu
 const projectsNavigation = [
-  { name: 'Todos os Projetos', href: '/projects', icon: FolderKanban },
+  { name: 'Projetos', href: '/projects', icon: FolderKanban },
   { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
   { name: 'Horas', href: '/time-tracking', icon: Clock },
 ];
@@ -56,7 +57,6 @@ const adminNavigation = [
   { name: 'Status da Loja', href: '/admin/shop-status', icon: Store },
 ];
 
-// Rotas de cada submenu
 const projectRoutes = ['/projects', '/tasks', '/time-tracking'];
 
 export function Sidebar() {
@@ -64,29 +64,29 @@ export function Sidebar() {
   const { signOut, user } = useAuth();
   const { isAdmin } = useAdmin();
   
-  // Estado dos submenus
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return saved === 'true';
+  });
+  
   const [projectsOpen, setProjectsOpen] = useState(() => {
     return projectRoutes.includes(location.pathname);
   });
   
   const [adminOpen, setAdminOpen] = useState(() => {
     const saved = localStorage.getItem(ADMIN_MENU_KEY);
-    if (saved !== null) return saved === 'true';
-    return false;
+    return saved === 'true';
   });
 
-  // Contadores para badges
   const [projectsCount, setProjectsCount] = useState<number>(0);
   const [tasksCount, setTasksCount] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
-  // Dados do perfil do usuário
   const [profile, setProfile] = useState<{
     full_name: string | null;
     logo_url: string | null;
   } | null>(null);
 
-  // Auto-expandir submenu quando navegar para uma rota dentro dele
   useEffect(() => {
     if (projectRoutes.includes(location.pathname)) {
       setProjectsOpen(true);
@@ -94,25 +94,25 @@ export function Sidebar() {
   }, [location.pathname]);
 
   useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isCollapsed));
+  }, [isCollapsed]);
+
+  useEffect(() => {
     localStorage.setItem(ADMIN_MENU_KEY, String(adminOpen));
   }, [adminOpen]);
 
-  // Buscar contagens do banco
   useEffect(() => {
     const fetchCounts = async () => {
-      // Projetos ativos
       const { count: projCount } = await supabase
         .from('projects')
         .select('*', { count: 'exact', head: true })
         .in('status', ['in_progress', 'pending_approval']);
       
-      // Tarefas pendentes
       const { count: taskCount } = await supabase
         .from('tasks')
         .select('*', { count: 'exact', head: true })
         .in('status', ['todo', 'in_progress']);
       
-      // Notificações não lidas
       const { count: notifCount } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
@@ -126,7 +126,6 @@ export function Sidebar() {
     fetchCounts();
   }, []);
 
-  // Buscar dados do perfil
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
@@ -147,51 +146,68 @@ export function Sidebar() {
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const renderNavItem = (item: typeof mainNavigation[0], isSubItem = false, index = 0, count?: number) => {
+  const NavItem = ({ item, count, isSubItem = false }: { 
+    item: typeof mainNavigation[0]; 
+    count?: number; 
+    isSubItem?: boolean;
+  }) => {
     const isActive = location.pathname === item.href;
+    const Icon = item.icon;
+
+    if (isCollapsed) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Link
+              to={item.href}
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              {count !== undefined && count > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                  {count > 9 ? '9+' : count}
+                </span>
+              )}
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="flex items-center gap-2">
+            {item.name}
+            {count !== undefined && count > 0 && (
+              <span className="rounded bg-primary/20 px-1.5 py-0.5 text-xs text-primary">
+                {count}
+              </span>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
     return (
       <Link
-        key={item.name}
         to={item.href}
         className={cn(
-          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
-          isSubItem && 'ml-4 animate-fade-in opacity-0',
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+          isSubItem && 'ml-6',
           isActive
-            ? 'bg-primary/10 text-primary active-indicator'
-            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
         )}
-        style={isSubItem ? { 
-          animationDelay: `${index * 50}ms`,
-          animationFillMode: 'forwards'
-        } : undefined}
       >
-        <div className={cn(
-          'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300',
-          isActive 
-            ? 'bg-primary/20 icon-glow' 
-            : 'bg-secondary/50 group-hover:bg-secondary'
-        )}>
-          <item.icon className={cn(
-            'h-4 w-4 transition-all duration-300',
-            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-          )} />
-        </div>
-        <span className="relative flex-1">
-          {item.name}
-          {isActive && (
-            <span className="absolute -bottom-1 left-0 h-[2px] w-full rounded-full bg-gradient-to-r from-primary to-accent opacity-50" />
-          )}
-        </span>
+        <Icon className="h-5 w-5 shrink-0" />
+        <span className="flex-1 truncate">{item.name}</span>
         {count !== undefined && count > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary">
+          <span className={cn(
+            'flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium',
+            isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/15 text-primary'
+          )}>
             {count > 99 ? '99+' : count}
           </span>
         )}
@@ -199,198 +215,245 @@ export function Sidebar() {
     );
   };
 
-  const renderCollapsibleTrigger = (
-    icon: React.ElementType,
-    label: string,
-    isOpen: boolean,
-    isActive: boolean,
-    count?: number
-  ) => {
-    const Icon = icon;
-    // Quando expandido, não mostra fundo ativo para evitar sobreposição com sub-items
-    const showActiveStyle = isActive && !isOpen;
-    return (
-      <div
-        className={cn(
-          'group relative flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 cursor-pointer',
-          showActiveStyle
-            ? 'bg-primary/10 text-primary'
-            : isActive && isOpen
-              ? 'text-primary hover:bg-secondary/50'
-              : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-        )}
-      >
-        <div className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300',
-          showActiveStyle 
-            ? 'bg-primary/20 icon-glow' 
-            : isActive
-              ? 'bg-primary/20'
-              : 'bg-secondary/50 group-hover:bg-secondary'
-        )}>
-          <Icon className={cn(
-            'h-4 w-4 transition-all duration-300',
-            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-          )} />
-        </div>
-        <span className="flex-1 ml-3 text-left">{label}</span>
-        {count !== undefined && count > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary mr-2">
-            {count > 99 ? '99+' : count}
-          </span>
-        )}
-        <ChevronDown className={cn(
-          "h-4 w-4 shrink-0 transition-transform duration-200",
-          isOpen && "rotate-180"
-        )} />
-      </div>
-    );
-  };
-
-  const isNotificationsActive = location.pathname === '/notifications';
-  const isProfileActive = location.pathname === '/profile';
-  const isSettingsActive = location.pathname === '/settings';
-
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass border-r border-border/50">
+    <aside className={cn(
+      'fixed left-0 top-0 z-40 h-screen border-r border-border bg-sidebar transition-all duration-200',
+      isCollapsed ? 'w-16' : 'w-60'
+    )}>
       <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-16 items-center justify-center border-b border-border/50 px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-lg glow-primary">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-gradient">DesignFlow</span>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Studio</span>
-            </div>
-          </div>
+        {/* Header */}
+        <div className={cn(
+          'flex h-14 items-center border-b border-border px-3',
+          isCollapsed ? 'justify-center' : 'justify-between'
+        )}>
+          {!isCollapsed && (
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
+                <FolderKanban className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-semibold">DesignFlow</span>
+            </Link>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            {isCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </Button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
-          <div className="mb-4 px-3">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
-              Menu Principal
-            </span>
-          </div>
+        <nav className="flex-1 space-y-1 overflow-y-auto p-2">
+          {/* Main Navigation */}
+          <NavItem item={mainNavigation[0]} />
           
-          {/* Dashboard */}
-          {renderNavItem(mainNavigation[0])}
-          
-          {/* Projetos - Collapsible */}
-          <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
-            <CollapsibleTrigger className="w-full p-0 text-left">
-              {renderCollapsibleTrigger(FolderKanban, 'Projetos', projectsOpen, isProjectsActive, projectsCount)}
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-1 space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-              {projectsNavigation.map((item, index) => {
-                const itemCount = item.href === '/projects' ? projectsCount : item.href === '/tasks' ? tasksCount : undefined;
-                return renderNavItem(item, true, index, itemCount);
-              })}
-            </CollapsibleContent>
-          </Collapsible>
-          
-          {/* Clientes */}
-          {renderNavItem(mainNavigation[1])}
-          
-          {/* Financeiro */}
-          {renderNavItem(mainNavigation[2])}
-
-          {/* Admin Section - Separado e colapsado por padrão */}
-          {isAdmin && (
-            <Collapsible open={adminOpen} onOpenChange={setAdminOpen} className="mt-6 pt-4 border-t border-border/50">
-              <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground transition-colors">
-                <span>Administração</span>
-                <ChevronDown className={cn(
-                  "h-4 w-4 transition-transform duration-200",
-                  adminOpen && "rotate-180"
-                )} />
+          {/* Projects Section */}
+          {isCollapsed ? (
+            <div className="space-y-1">
+              {projectsNavigation.map((item) => (
+                <NavItem 
+                  key={item.href} 
+                  item={item} 
+                  count={item.href === '/projects' ? projectsCount : item.href === '/tasks' ? tasksCount : undefined}
+                />
+              ))}
+            </div>
+          ) : (
+            <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
+              <CollapsibleTrigger className="w-full">
+                <div className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer',
+                  isProjectsActive
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                )}>
+                  <FolderKanban className="h-5 w-5 shrink-0" />
+                  <span className="flex-1 text-left">Projetos</span>
+                  {projectsCount > 0 && (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 text-xs font-medium text-primary">
+                      {projectsCount}
+                    </span>
+                  )}
+                  <ChevronDown className={cn(
+                    'h-4 w-4 transition-transform',
+                    projectsOpen && 'rotate-180'
+                  )} />
+                </div>
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                {adminNavigation.map((item, index) => renderNavItem(item, false, index))}
+              <CollapsibleContent className="mt-1 space-y-1">
+                {projectsNavigation.map((item) => (
+                  <NavItem 
+                    key={item.href} 
+                    item={item} 
+                    isSubItem 
+                    count={item.href === '/tasks' ? tasksCount : undefined}
+                  />
+                ))}
               </CollapsibleContent>
             </Collapsible>
           )}
+          
+          <NavItem item={mainNavigation[1]} />
+          <NavItem item={mainNavigation[2]} />
+
+          {/* Admin Section */}
+          {isAdmin && (
+            <div className="pt-4">
+              {!isCollapsed && (
+                <div className="mb-2 px-3">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                    Admin
+                  </span>
+                </div>
+              )}
+              {isCollapsed ? (
+                <div className="space-y-1">
+                  {adminNavigation.slice(0, 3).map((item) => (
+                    <NavItem key={item.href} item={item} />
+                  ))}
+                </div>
+              ) : (
+                <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
+                  <CollapsibleTrigger className="w-full">
+                    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer">
+                      <Shield className="h-5 w-5 shrink-0" />
+                      <span className="flex-1 text-left">Administração</span>
+                      <ChevronDown className={cn(
+                        'h-4 w-4 transition-transform',
+                        adminOpen && 'rotate-180'
+                      )} />
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-1 space-y-1">
+                    {adminNavigation.map((item) => (
+                      <NavItem key={item.href} item={item} isSubItem />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+            </div>
+          )}
         </nav>
 
-        {/* Footer - Profile with Icons */}
-        <div className="border-t border-border/50 p-3 space-y-2">
-          {/* Perfil do Usuário com Ícones de Ação */}
-          <div className={cn(
-            'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300',
-            isProfileActive ? 'bg-primary/10' : 'hover:bg-secondary/50'
-          )}>
-            <Link to="/profile" className="flex items-center gap-3 flex-1 min-w-0">
-              <Avatar className="h-9 w-9 shrink-0 border-2 border-border/50">
-                <AvatarImage src={profile?.logo_url || undefined} alt={profile?.full_name || 'Avatar'} />
-                <AvatarFallback className="bg-primary/20 text-primary text-sm font-medium">
+        {/* Footer */}
+        <div className="border-t border-border p-2 space-y-1">
+          {/* Notifications */}
+          {isCollapsed ? (
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/notifications"
+                  className={cn(
+                    'relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                    location.pathname === '/notifications'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    </span>
+                  )}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Notificações</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Link
+              to="/notifications"
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                location.pathname === '/notifications'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              )}
+            >
+              <Bell className="h-5 w-5 shrink-0" />
+              <span className="flex-1">Notificações</span>
+              {unreadNotifications > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-medium text-destructive-foreground">
+                  {unreadNotifications}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {/* Profile */}
+          {isCollapsed ? (
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/profile"
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                    location.pathname === '/profile'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={profile?.logo_url || undefined} />
+                    <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                      {getInitials(profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">{profile?.full_name || 'Perfil'}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Link
+              to="/profile"
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+                location.pathname === '/profile'
+                  ? 'bg-primary/10'
+                  : 'hover:bg-secondary'
+              )}
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={profile?.logo_url || undefined} />
+                <AvatarFallback className="text-xs bg-primary/20 text-primary">
                   {getInitials(profile?.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col min-w-0">
-                <span className={cn(
-                  'text-sm font-medium truncate',
-                  isProfileActive ? 'text-primary' : 'text-foreground'
-                )}>
-                  {profile?.full_name || 'Usuário'}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Ver perfil
-                </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{profile?.full_name || 'Usuário'}</p>
+                <p className="text-xs text-muted-foreground">Ver perfil</p>
               </div>
+              <Settings className="h-4 w-4 text-muted-foreground" />
             </Link>
-            
-            {/* Ícones de Ações */}
-            <div className="flex items-center gap-1 shrink-0">
-              {/* Notificações */}
-              <Link
-                to="/notifications"
-                className={cn(
-                  'relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                  isNotificationsActive ? 'bg-primary/20' : 'hover:bg-primary/10'
-                )}
-                title="Notificações"
-              >
-                <Bell className={cn(
-                  'h-4 w-4 transition-all duration-300',
-                  isNotificationsActive ? 'text-primary' : 'text-muted-foreground hover:text-primary',
-                  unreadNotifications > 0 && 'animate-bell-wiggle'
-                )} />
-                {unreadNotifications > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </span>
-                )}
-              </Link>
-              
-              {/* Configurações */}
-              <Link
-                to="/profile#preferences"
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                  isSettingsActive ? 'bg-primary/20' : 'hover:bg-primary/10'
-                )}
-                title="Preferências"
-              >
-                <Settings className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
-              </Link>
-            </div>
-          </div>
+          )}
 
-          <Separator className="my-2" />
-
-          {/* Botão Sair */}
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 rounded-xl text-muted-foreground transition-all duration-300 hover:bg-destructive/10 hover:text-destructive"
-            onClick={signOut}
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/50">
-              <LogOut className="h-4 w-4" />
-            </div>
-            Sair
-          </Button>
+          {/* Sign Out */}
+          {isCollapsed ? (
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  onClick={signOut}
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sair</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              onClick={signOut}
+            >
+              <LogOut className="h-5 w-5" />
+              Sair
+            </Button>
+          )}
         </div>
       </div>
     </aside>

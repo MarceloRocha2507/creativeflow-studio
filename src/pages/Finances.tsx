@@ -42,7 +42,6 @@ export default function Finances() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Form state
   const [projectId, setProjectId] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState('pending');
@@ -143,7 +142,6 @@ export default function Finances() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
-  // Calculate totals
   const monthStart = startOfMonth(new Date());
   const monthEnd = endOfMonth(new Date());
   
@@ -159,9 +157,9 @@ export default function Finances() {
   const totalProjectValue = projects.reduce((acc, p) => acc + (p.budget || 0), 0);
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    partial: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
-    paid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    pending: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
+    partial: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
+    paid: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
   };
 
   const statusLabels: Record<string, string> = {
@@ -172,31 +170,31 @@ export default function Finances() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold lg:text-3xl text-gradient">Financeiro</h1>
+            <h1 className="text-2xl font-bold lg:text-3xl">Financeiro</h1>
             <p className="text-muted-foreground">Controle de pagamentos e faturamento</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary gap-2 glow-primary">
+              <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 Novo Pagamento
               </Button>
             </DialogTrigger>
-            <DialogContent className="glass-card border-white/10">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle className="text-gradient">{editingPayment ? 'Editar Pagamento' : 'Novo Pagamento'}</DialogTitle>
+                <DialogTitle>{editingPayment ? 'Editar Pagamento' : 'Novo Pagamento'}</DialogTitle>
                 <DialogDescription className="sr-only">Formulário de registro de pagamento</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Projeto *</Label>
                   <Select value={projectId} onValueChange={setProjectId}>
-                    <SelectTrigger className="glass border-white/10"><SelectValue placeholder="Selecione um projeto" /></SelectTrigger>
-                    <SelectContent className="glass-card border-white/10">
+                    <SelectTrigger><SelectValue placeholder="Selecione um projeto" /></SelectTrigger>
+                    <SelectContent>
                       {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -204,13 +202,13 @@ export default function Finances() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Valor (R$) *</Label>
-                    <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required className="glass border-white/10" />
+                    <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
                     <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger className="glass border-white/10"><SelectValue /></SelectTrigger>
-                      <SelectContent className="glass-card border-white/10">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
                         <SelectItem value="pending">Pendente</SelectItem>
                         <SelectItem value="partial">Parcial</SelectItem>
                         <SelectItem value="paid">Pago</SelectItem>
@@ -220,15 +218,17 @@ export default function Finances() {
                 </div>
                 <div className="space-y-2">
                   <Label>Data do Pagamento</Label>
-                  <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="glass border-white/10" />
+                  <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Observações</Label>
-                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="glass border-white/10" />
+                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="glass border-white/10">Cancelar</Button>
-                  <Button type="submit" className="gradient-primary glow-primary">{editingPayment ? 'Salvar' : 'Registrar'}</Button>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">{editingPayment ? 'Salvar' : 'Registrar'}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -237,77 +237,79 @@ export default function Finances() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Recebido</CardTitle>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
               <div className="rounded-lg bg-emerald-500/10 p-2">
-                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <TrendingUp className="h-5 w-5 text-emerald-500" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-400">{formatCurrency(totalReceived)}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">A Receber</CardTitle>
+            </div>
+            <div className="mt-3">
+              <p className="text-sm text-muted-foreground">Total Recebido</p>
+              <p className="mt-0.5 text-2xl font-bold text-emerald-500">{formatCurrency(totalReceived)}</p>
+            </div>
+          </div>
+          
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
               <div className="rounded-lg bg-amber-500/10 p-2">
-                <Clock className="h-4 w-4 text-amber-400" />
+                <Clock className="h-5 w-5 text-amber-500" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-400">{formatCurrency(totalPending)}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Este Mês</CardTitle>
-              <div className="rounded-lg bg-cyan-500/10 p-2">
-                <Wallet className="h-4 w-4 text-cyan-400" />
+            </div>
+            <div className="mt-3">
+              <p className="text-sm text-muted-foreground">A Receber</p>
+              <p className="mt-0.5 text-2xl font-bold text-amber-500">{formatCurrency(totalPending)}</p>
+            </div>
+          </div>
+          
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div className="rounded-lg bg-blue-500/10 p-2">
+                <Wallet className="h-5 w-5 text-blue-500" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-cyan-400">{formatCurrency(monthlyReceived)}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card glass-border group transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Valor em Projetos</CardTitle>
-              <div className="rounded-lg bg-primary/10 p-2">
-                <Receipt className="h-4 w-4 text-primary" />
+            </div>
+            <div className="mt-3">
+              <p className="text-sm text-muted-foreground">Este Mês</p>
+              <p className="mt-0.5 text-2xl font-bold text-blue-500">{formatCurrency(monthlyReceived)}</p>
+            </div>
+          </div>
+          
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div className="rounded-lg bg-purple-500/10 p-2">
+                <Receipt className="h-5 w-5 text-purple-500" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalProjectValue)}</div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="mt-3">
+              <p className="text-sm text-muted-foreground">Valor em Projetos</p>
+              <p className="mt-0.5 text-2xl font-bold">{formatCurrency(totalProjectValue)}</p>
+            </div>
+          </div>
         </div>
 
         {/* Payments List */}
-        <Card className="glass-card glass-border">
-          <CardHeader>
-            <CardTitle className="text-gradient">Histórico de Pagamentos</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="rounded-lg border border-border bg-card">
+          <div className="border-b border-border p-4">
+            <h2 className="font-semibold">Histórico de Pagamentos</h2>
+          </div>
+          <div className="p-4">
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             ) : payments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-4 rounded-full glass p-4">
-                  <DollarSign className="h-8 w-8 text-muted-foreground" />
+                <div className="mb-3 rounded-lg bg-muted p-3">
+                  <DollarSign className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium">Nenhum pagamento registrado</h3>
+                <h3 className="font-medium">Nenhum pagamento registrado</h3>
                 <p className="mt-1 text-sm text-muted-foreground">Registre seu primeiro pagamento</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {payments.map((payment, index) => (
+              <div className="space-y-2">
+                {payments.map((payment) => (
                   <div 
                     key={payment.id} 
-                    className="flex items-center justify-between rounded-xl glass glass-border p-4 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-primary/5"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="flex items-center justify-between rounded-lg border border-border bg-background p-4 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -317,13 +319,13 @@ export default function Finances() {
                         </Badge>
                       </div>
                       {payment.payment_date && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground mt-0.5">
                           {format(new Date(payment.payment_date), "dd 'de' MMMM", { locale: ptBR })}
                         </p>
                       )}
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`text-lg font-bold ${payment.status === 'paid' ? 'text-emerald-400' : 'text-foreground'}`}>
+                      <span className={`text-lg font-bold ${payment.status === 'paid' ? 'text-emerald-500' : ''}`}>
                         {formatCurrency(payment.amount)}
                       </span>
                       <DropdownMenu>
@@ -332,7 +334,7 @@ export default function Finances() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="glass-card border-white/10">
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEditDialog(payment)}>
                             <Pencil className="mr-2 h-4 w-4" />Editar
                           </DropdownMenuItem>
@@ -346,8 +348,8 @@ export default function Finances() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
