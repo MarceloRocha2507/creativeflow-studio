@@ -63,6 +63,15 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
   const totalArts = project.package_total_arts || 0;
   const progressPercent = totalArts > 0 ? (completedArts / totalArts) * 100 : 0;
   
+  // Check if deadline is within 3 days for pulse effect
+  const isNearDeadline = project.deadline && project.status !== 'completed' && project.status !== 'cancelled' && (() => {
+    const deadlineDate = new Date(project.deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = differenceInDays(deadlineDate, today);
+    return days <= 3;
+  })();
+  
   const value = project.project_type === 'package' 
     ? project.package_total_value 
     : project.budget || project.hourly_rate;
@@ -212,7 +221,10 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-105"
+                className={cn(
+                  "h-7 px-2 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-105",
+                  isNearDeadline && "animate-pulse-glow"
+                )}
                 onClick={(e) => { e.stopPropagation(); onComplete(project.id); }}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
