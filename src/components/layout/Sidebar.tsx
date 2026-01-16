@@ -339,93 +339,127 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-border p-2">
-          {/* Profile */}
           {isCollapsed ? (
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/profile"
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
-                    location.pathname === '/profile'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                  )}
-                >
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={profile?.logo_url || undefined} />
-                    <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                      {getInitials(profile?.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{profile?.full_name || 'Perfil'}</TooltipContent>
-            </Tooltip>
+            // Collapsed: Stack vertically
+            <div className="flex flex-col items-center gap-1">
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/profile"
+                    className={cn(
+                      'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                      location.pathname === '/profile'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                  >
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={profile?.logo_url || undefined} />
+                      <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                        {getInitials(profile?.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{profile?.full_name || 'Perfil'}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/notifications"
+                    className={cn(
+                      'relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                      location.pathname === '/notifications'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                      </span>
+                    )}
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Notificações</TooltipContent>
+              </Tooltip>
+
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    onClick={signOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sair</TooltipContent>
+              </Tooltip>
+            </div>
           ) : (
-            <Link
-              to="/profile"
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
-                location.pathname === '/profile'
-                  ? 'bg-primary/10'
-                  : 'hover:bg-secondary'
-              )}
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.logo_url || undefined} />
-                <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                  {getInitials(profile?.full_name)}
-                </AvatarFallback>
-              </Avatar>
-              <span className="flex-1 text-sm font-medium truncate">{profile?.full_name || 'Usuário'}</span>
-            </Link>
+            // Expanded: All in one row
+            <div className="flex items-center gap-2">
+              <Link
+                to="/profile"
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors flex-1 min-w-0',
+                  location.pathname === '/profile'
+                    ? 'bg-primary/10'
+                    : 'hover:bg-secondary'
+                )}
+              >
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarImage src={profile?.logo_url || undefined} />
+                  <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                    {getInitials(profile?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium truncate">{profile?.full_name || 'Usuário'}</span>
+              </Link>
+
+              <div className="flex items-center gap-0.5 shrink-0">
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/notifications"
+                      className={cn(
+                        'relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+                        location.pathname === '/notifications'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      )}
+                    >
+                      <Bell className="h-4 w-4" />
+                      {unreadNotifications > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                        </span>
+                      )}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Notificações</TooltipContent>
+                </Tooltip>
+
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      onClick={signOut}
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Sair</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
           )}
-
-          {/* Action buttons in a row */}
-          <div className={cn(
-            'flex items-center gap-1 pt-1',
-            isCollapsed ? 'flex-col' : 'justify-between px-1'
-          )}>
-
-            {/* Notifications */}
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/notifications"
-                  className={cn(
-                    'relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
-                    location.pathname === '/notifications'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                  )}
-                >
-                  <Bell className="h-4 w-4" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
-                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                    </span>
-                  )}
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side={isCollapsed ? 'right' : 'top'}>Notificações</TooltipContent>
-            </Tooltip>
-
-            {/* Sign Out */}
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  onClick={signOut}
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side={isCollapsed ? 'right' : 'top'}>Sair</TooltipContent>
-            </Tooltip>
-          </div>
         </div>
       </div>
     </aside>
