@@ -122,24 +122,6 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
-              {project.status !== 'completed' && project.status !== 'cancelled' && onComplete && (
-                <DropdownMenuItem 
-                  onClick={(e) => { e.stopPropagation(); onComplete(project.id); }}
-                  className="text-emerald-500 focus:text-emerald-500"
-                >
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Marcar como Concluído
-                </DropdownMenuItem>
-              )}
-              {project.status === 'completed' && onReopen && (
-                <DropdownMenuItem 
-                  onClick={(e) => { e.stopPropagation(); onReopen(project.id); }}
-                  className="text-cyan-500 focus:text-cyan-500"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reabrir Projeto
-                </DropdownMenuItem>
-              )}
               <DropdownMenuItem 
                 onClick={(e) => { e.stopPropagation(); onDelete(project.id); }} 
                 className="text-destructive focus:text-destructive"
@@ -205,17 +187,44 @@ export function ProjectCard({ project, index, completedArts = 0, onView, onEdit,
             )}
           </div>
           
-          {/* Value */}
-          {value ? (
-            <div className="flex items-center gap-1 text-sm font-semibold text-emerald-500">
-              <span>
+          {/* Action buttons + Value */}
+          <div className="flex items-center gap-2">
+            {/* Botão Concluir */}
+            {project.status !== 'completed' && project.status !== 'cancelled' && onComplete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"
+                onClick={(e) => { e.stopPropagation(); onComplete(project.id); }}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                Concluir
+              </Button>
+            )}
+            
+            {/* Botão Reabrir */}
+            {project.status === 'completed' && onReopen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-cyan-500 hover:text-cyan-600 hover:bg-cyan-500/10"
+                onClick={(e) => { e.stopPropagation(); onReopen(project.id); }}
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                Reabrir
+              </Button>
+            )}
+            
+            {/* Value */}
+            {value ? (
+              <span className="text-sm font-semibold text-emerald-500">
                 R$ {value.toLocaleString('pt-BR')}
                 {project.billing_type === 'hourly' && '/h'}
               </span>
-            </div>
-          ) : (
-            <span className="text-xs text-muted-foreground">--</span>
-          )}
+            ) : (
+              <span className="text-xs text-muted-foreground">--</span>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
