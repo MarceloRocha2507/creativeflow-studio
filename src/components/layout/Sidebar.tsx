@@ -29,7 +29,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ThemeToggle } from '@/components/ThemeToggle';
+
 
 const SIDEBAR_COLLAPSED_KEY = 'designflow-sidebar-collapsed';
 const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
@@ -387,8 +387,6 @@ export function Sidebar() {
             'flex items-center gap-1 pt-1',
             isCollapsed ? 'flex-col' : 'justify-between px-1'
           )}>
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {/* Notifications */}
             <Tooltip delayDuration={0}>
