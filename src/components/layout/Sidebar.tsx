@@ -30,6 +30,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const SIDEBAR_COLLAPSED_KEY = 'designflow-sidebar-collapsed';
 const ADMIN_MENU_KEY = 'designflow-admin-menu-open';
@@ -339,6 +340,9 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-border p-2 space-y-1">
+          {/* Theme Toggle */}
+          <ThemeToggle collapsed={isCollapsed} />
+
           {/* Notifications */}
           {isCollapsed ? (
             <Tooltip delayDuration={0}>
