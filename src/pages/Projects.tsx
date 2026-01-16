@@ -167,6 +167,7 @@ export default function Projects() {
   const [packageTotalValue, setPackageTotalValue] = useState('');
   const [packageTotalArts, setPackageTotalArts] = useState('');
   const [artNames, setArtNames] = useState<string[]>([]);
+  const [artTypes, setArtTypes] = useState<string[]>([]);
   
   // Form wizard step
   const [formStep, setFormStep] = useState(1);
@@ -182,6 +183,17 @@ export default function Projects() {
             newNames.push('');
           }
           return newNames;
+        } else {
+          return prev.slice(0, total);
+        }
+      });
+      setArtTypes(prev => {
+        if (total > prev.length) {
+          const newTypes = [...prev];
+          for (let i = prev.length; i < total; i++) {
+            newTypes.push('feed');
+          }
+          return newTypes;
         } else {
           return prev.slice(0, total);
         }
@@ -230,6 +242,7 @@ export default function Projects() {
     setPackageTotalValue('');
     setPackageTotalArts('');
     setArtNames([]);
+    setArtTypes([]);
     setFormStep(1);
   };
 
@@ -244,12 +257,13 @@ export default function Projects() {
   const loadProjectArts = async (projectId: string) => {
     const { data } = await supabase
       .from('project_arts')
-      .select('name, order_index')
+      .select('name, order_index, art_type')
       .eq('project_id', projectId)
       .order('order_index', { ascending: true });
     
     if (data && data.length > 0) {
       setArtNames(data.map(art => art.name));
+      setArtTypes(data.map(art => art.art_type || 'feed'));
     }
   };
 
@@ -467,7 +481,7 @@ export default function Projects() {
           name: artName || `Arte ${String(index + 1).padStart(2, '0')}`,
           order_index: index + 1,
           status: 'pending',
-          art_type: 'feed',
+          art_type: artTypes[index] || 'feed',
         }));
 
         if (artsToInsert.length > 0) {
@@ -500,7 +514,7 @@ export default function Projects() {
           name: artName || `Arte ${String(index + 1).padStart(2, '0')}`,
           order_index: index + 1,
           status: 'pending',
-          art_type: 'feed',
+          art_type: artTypes[index] || 'feed',
         }));
 
         if (artsToInsert.length > 0) {
@@ -770,23 +784,46 @@ export default function Projects() {
                               <Package className="h-4 w-4" />
                               <Label className="text-primary text-sm">Nomes das Artes ({artNames.length})</Label>
                             </div>
-                            <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                               {artNames.map((artName, index) => (
-                                <Input
-                                  key={index}
-                                  value={artName}
-                                  onChange={(e) => {
-                                    const newNames = [...artNames];
-                                    newNames[index] = toTitleCase(e.target.value);
-                                    setArtNames(newNames);
-                                  }}
-                                  className="glass border-white/10"
-                                  placeholder={`Arte ${String(index + 1).padStart(2, '0')}`}
-                                />
+                                <div key={index} className="flex gap-2">
+                                  <Select 
+                                    value={artTypes[index] || 'feed'} 
+                                    onValueChange={(value) => {
+                                      const newTypes = [...artTypes];
+                                      newTypes[index] = value;
+                                      setArtTypes(newTypes);
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-28 glass border-white/10 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="glass-card border-white/10">
+                                      <SelectItem value="feed">Feed</SelectItem>
+                                      <SelectItem value="story">Story</SelectItem>
+                                      <SelectItem value="flyer">Flyer</SelectItem>
+                                      <SelectItem value="banner">Banner</SelectItem>
+                                      <SelectItem value="logo">Logo</SelectItem>
+                                      <SelectItem value="reels">Reels</SelectItem>
+                                      <SelectItem value="carrossel">Carrossel</SelectItem>
+                                      <SelectItem value="outro">Outro</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Input
+                                    value={artName}
+                                    onChange={(e) => {
+                                      const newNames = [...artNames];
+                                      newNames[index] = toTitleCase(e.target.value);
+                                      setArtNames(newNames);
+                                    }}
+                                    className="flex-1 glass border-white/10"
+                                    placeholder={`Arte ${String(index + 1).padStart(2, '0')}`}
+                                  />
+                                </div>
                               ))}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              💡 Title Case automático
+                              💡 Selecione o tipo e nomeie cada arte
                             </p>
                           </div>
                         )}
