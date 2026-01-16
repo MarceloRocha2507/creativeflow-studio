@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Camera, Loader2, LogOut, Lock, User, Bell } from 'lucide-react';
+import { Camera, Loader2, LogOut, Lock, User, Bell, Settings, Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { z } from 'zod';
 import {
   AlertDialog,
@@ -66,6 +67,7 @@ export default function Profile() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile form
@@ -463,6 +465,34 @@ export default function Profile() {
                 'Salvar Preferências'
               )}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Configurações */}
+        <Card className="glass-card glass-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Configurações</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-2">
+            <div className="flex items-center justify-between rounded-lg glass glass-border p-3">
+              <div>
+                <Label className="text-sm">Tema da Interface</Label>
+                <p className="text-xs text-muted-foreground">
+                  Escolha entre tema claro ou escuro
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Sun className="h-4 w-4 text-muted-foreground" />
+                <Switch
+                  checked={theme === "dark"}
+                  onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                />
+                <Moon className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
