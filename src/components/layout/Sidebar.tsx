@@ -86,6 +86,7 @@ export function Sidebar() {
     full_name: string | null;
     logo_url: string | null;
   } | null>(null);
+  const [systemLogo, setSystemLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (projectRoutes.includes(location.pathname)) {
@@ -141,6 +142,22 @@ export function Sidebar() {
     
     fetchProfile();
   }, [user]);
+
+  useEffect(() => {
+    const fetchSystemLogo = async () => {
+      const { data } = await supabase
+        .from('shop_status')
+        .select('logo_url')
+        .limit(1)
+        .single();
+      
+      if (data) {
+        setSystemLogo(data.logo_url);
+      }
+    };
+    
+    fetchSystemLogo();
+  }, []);
 
   const isProjectsActive = projectRoutes.includes(location.pathname);
 
@@ -228,8 +245,12 @@ export function Sidebar() {
         )}>
           {!isCollapsed && (
             <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-                <FolderKanban className="h-4 w-4 text-primary-foreground" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden gradient-primary">
+                {systemLogo ? (
+                  <img src={systemLogo} alt="Logo" className="h-full w-full object-contain" />
+                ) : (
+                  <FolderKanban className="h-4 w-4 text-primary-foreground" />
+                )}
               </div>
               <span className="font-semibold">DesignFlow</span>
             </Link>
