@@ -234,9 +234,6 @@ export type Database = {
           amount: number
           created_at: string
           id: string
-          mercadopago_init_point: string | null
-          mercadopago_payment_id: string | null
-          mercadopago_preference_id: string | null
           notes: string | null
           payment_date: string | null
           project_id: string
@@ -248,9 +245,6 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
-          mercadopago_init_point?: string | null
-          mercadopago_payment_id?: string | null
-          mercadopago_preference_id?: string | null
           notes?: string | null
           payment_date?: string | null
           project_id: string
@@ -262,9 +256,6 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
-          mercadopago_init_point?: string | null
-          mercadopago_payment_id?: string | null
-          mercadopago_preference_id?: string | null
           notes?: string | null
           payment_date?: string | null
           project_id?: string

@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet, AlertCircle, Link2, Copy, ExternalLink, Loader2, CreditCard } from 'lucide-react';
+import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -31,9 +31,6 @@ interface Payment {
   payment_date: string | null;
   notes: string | null;
   created_at: string;
-  mercadopago_preference_id: string | null;
-  mercadopago_init_point: string | null;
-  mercadopago_payment_id: string | null;
   projects?: { name: string } | null;
 }
 
@@ -43,7 +40,6 @@ export default function Finances() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [generatingLinkId, setGeneratingLinkId] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -140,53 +136,6 @@ export default function Finances() {
     } else {
       toast({ title: 'Pagamento excluído!' });
       fetchData();
-    }
-  };
-
-  const handleGenerateMPLink = async (payment: Payment) => {
-    if (!payment.projects?.name) {
-      toast({ variant: 'destructive', title: 'Erro', description: 'Pagamento sem projeto associado' });
-      return;
-    }
-
-    setGeneratingLinkId(payment.id);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('mercadopago-create-preference', {
-        body: {
-          paymentId: payment.id,
-          amount: payment.amount,
-          title: payment.projects.name,
-          description: payment.notes || `Pagamento - ${payment.projects.name}`,
-        },
-      });
-
-      if (error) {
-        console.error('Error generating link:', error);
-        toast({ variant: 'destructive', title: 'Erro ao gerar link', description: error.message });
-        return;
-      }
-
-      if (data?.init_point) {
-        toast({ title: 'Link gerado com sucesso!' });
-        fetchData(); // Refresh to get the new link
-      } else {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Resposta inválida do servidor' });
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      toast({ variant: 'destructive', title: 'Erro ao gerar link', description: 'Erro inesperado' });
-    } finally {
-      setGeneratingLinkId(null);
-    }
-  };
-
-  const handleCopyLink = async (link: string) => {
-    try {
-      await navigator.clipboard.writeText(link);
-      toast({ title: 'Link copiado!' });
-    } catch {
-      toast({ variant: 'destructive', title: 'Erro ao copiar', description: 'Não foi possível copiar o link' });
     }
   };
 
@@ -393,12 +342,6 @@ export default function Finances() {
                           <Badge variant="outline" className={statusColors[payment.status]}>
                             {statusLabels[payment.status]}
                           </Badge>
-                          {payment.mercadopago_init_point && (
-                            <Badge variant="outline" className="bg-sky-500/10 text-sky-500 border-sky-500/30 gap-1">
-                              <CreditCard className="h-3 w-3" />
-                              Link MP
-                            </Badge>
-                          )}
                         </div>
                         {payment.payment_date && (
                           <p className={cn(
@@ -425,36 +368,6 @@ export default function Finances() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {/* Mercado Pago options */}
-                            {payment.status !== 'paid' && !payment.mercadopago_init_point && (
-                              <DropdownMenuItem
-                                onClick={() => handleGenerateMPLink(payment)}
-                                disabled={generatingLinkId === payment.id}
-                              >
-                                {generatingLinkId === payment.id ? (
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Link2 className="mr-2 h-4 w-4" />
-                                )}
-                                Gerar Link MP
-                              </DropdownMenuItem>
-                            )}
-                            {payment.mercadopago_init_point && (
-                              <>
-                                <DropdownMenuItem onClick={() => handleCopyLink(payment.mercadopago_init_point!)}>
-                                  <Copy className="mr-2 h-4 w-4" />
-                                  Copiar Link MP
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <a href={payment.mercadopago_init_point} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="mr-2 h-4 w-4" />
-                                    Abrir Link MP
-                                  </a>
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {(payment.status !== 'paid' || payment.mercadopago_init_point) && <DropdownMenuSeparator />}
-                            
                             <DropdownMenuItem onClick={() => openEditDialog(payment)}>
                               <Pencil className="mr-2 h-4 w-4" />Editar
                             </DropdownMenuItem>
@@ -465,36 +378,6 @@ export default function Finances() {
                         </DropdownMenu>
                       </div>
                     </div>
-
-                    {/* MP Link display row */}
-                    {payment.mercadopago_init_point && payment.status !== 'paid' && (
-                      <div className="flex items-center gap-2 pl-3 mt-1">
-                        <div className="flex-1 min-w-0 flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 rounded-md border border-sky-500/20">
-                          <CreditCard className="h-4 w-4 text-sky-500 shrink-0" />
-                          <span className="text-xs text-sky-600 dark:text-sky-400 truncate font-mono">
-                            {payment.mercadopago_init_point}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="shrink-0 h-8 px-2 text-sky-500 hover:text-sky-600 hover:bg-sky-500/10"
-                          onClick={() => handleCopyLink(payment.mercadopago_init_point!)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="shrink-0 h-8 px-2 text-sky-500 hover:text-sky-600 hover:bg-sky-500/10"
-                          asChild
-                        >
-                          <a href={payment.mercadopago_init_point} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
