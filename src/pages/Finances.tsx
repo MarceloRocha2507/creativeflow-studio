@@ -148,7 +148,7 @@ export default function Finances() {
   
   const monthlyPayments = payments.filter(p => {
     if (!p.payment_date) return false;
-    const date = new Date(p.payment_date);
+    const date = new Date(p.payment_date + 'T12:00:00');
     return date >= monthStart && date <= monthEnd;
   });
 
@@ -347,7 +347,7 @@ export default function Finances() {
                           "text-sm text-muted-foreground mt-0.5",
                           payment.status === 'pending' && "pl-6"
                         )}>
-                          {format(new Date(payment.payment_date), "dd 'de' MMMM", { locale: ptBR })}
+                          {format(new Date(payment.payment_date + 'T12:00:00'), "dd 'de' MMMM", { locale: ptBR })}
                         </p>
                       )}
                     </div>
