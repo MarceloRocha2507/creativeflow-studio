@@ -184,7 +184,7 @@ export function Sidebar() {
                 'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
                 isActive
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
               )}
             >
               <Icon className="h-5 w-5" />
@@ -215,7 +215,7 @@ export function Sidebar() {
           isSubItem && 'ml-6',
           isActive
             ? 'bg-primary text-primary-foreground'
-            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+            : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
         )}
       >
         <Icon className="h-5 w-5 shrink-0" />
@@ -288,7 +288,7 @@ export function Sidebar() {
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer',
                   isProjectsActive
                     ? 'text-primary'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
                 )}>
                   <FolderKanban className="h-5 w-5 shrink-0" />
                   <span className="flex-1 text-left">Projetos</span>
@@ -338,7 +338,7 @@ export function Sidebar() {
               ) : (
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger className="w-full">
-                    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer">
+                    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 cursor-pointer">
                       <Shield className="h-5 w-5 shrink-0" />
                       <span className="flex-1 text-left">Administração</span>
                       <ChevronDown className={cn(
@@ -365,13 +365,13 @@ export function Sidebar() {
             <div className="flex flex-col items-center gap-1">
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
-                  <Link
-                    to="/profile"
-                    className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
-                      location.pathname === '/profile'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    <Link
+                      to="/profile"
+                      className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                        location.pathname === '/profile'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
                     )}
                   >
                     <Avatar className="h-7 w-7">
@@ -389,12 +389,12 @@ export function Sidebar() {
                 <TooltipTrigger asChild>
                   <Link
                     to="/notifications"
-                    className={cn(
-                      'relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
-                      location.pathname === '/notifications'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
+                      className={cn(
+                        'relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                        location.pathname === '/notifications'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
+                      )}
                   >
                     <Bell className="h-4 w-4" />
                     {unreadNotifications > 0 && (
@@ -430,7 +430,7 @@ export function Sidebar() {
                   'flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors flex-1 min-w-0',
                   location.pathname === '/profile'
                     ? 'bg-primary/10'
-                    : 'hover:bg-secondary'
+                    : 'hover:bg-blue-500/10'
                 )}
               >
                 <Avatar className="h-8 w-8 shrink-0">
@@ -451,7 +451,7 @@ export function Sidebar() {
                         'relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
                         location.pathname === '/notifications'
                           ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                          : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
                       )}
                     >
                       <Bell className="h-4 w-4" />
