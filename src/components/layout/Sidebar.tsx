@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -82,11 +83,35 @@ export function Sidebar() {
   const [tasksCount, setTasksCount] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
-  const [profile, setProfile] = useState<{
-    full_name: string | null;
-    logo_url: string | null;
-  } | null>(null);
-  const [systemLogo, setSystemLogo] = useState<string | null>(null);
+  // Cache profile data to prevent flicker on navigation
+  const { data: profile } = useQuery({
+    queryKey: ['sidebar-profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, logo_url')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+
+  // Cache system logo to prevent flicker on navigation
+  const { data: systemLogo } = useQuery({
+    queryKey: ['system-logo'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('shop_status')
+        .select('logo_url')
+        .limit(1)
+        .single();
+      return data?.logo_url || null;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
 
   useEffect(() => {
     if (projectRoutes.includes(location.pathname)) {
@@ -125,38 +150,6 @@ export function Sidebar() {
     };
     
     fetchCounts();
-  }, []);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, logo_url')
-        .eq('user_id', user.id)
-        .single();
-      
-      setProfile(data);
-    };
-    
-    fetchProfile();
-  }, [user]);
-
-  useEffect(() => {
-    const fetchSystemLogo = async () => {
-      const { data } = await supabase
-        .from('shop_status')
-        .select('logo_url')
-        .limit(1)
-        .single();
-      
-      if (data) {
-        setSystemLogo(data.logo_url);
-      }
-    };
-    
-    fetchSystemLogo();
   }, []);
 
   const isProjectsActive = projectRoutes.includes(location.pathname);
