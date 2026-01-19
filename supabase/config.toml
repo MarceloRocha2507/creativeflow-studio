@@ -5,9 +5,3 @@ verify_jwt = true
 
 [functions.update-discord-status]
 verify_jwt = false
-
-[functions.mercadopago-webhook]
-verify_jwt = false
-
-[functions.mercadopago-create-preference]
-verify_jwt = false
