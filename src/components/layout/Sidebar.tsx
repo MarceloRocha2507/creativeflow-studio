@@ -181,7 +181,7 @@ export function Sidebar() {
             <Link
               to={item.href}
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                'flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
@@ -211,7 +211,7 @@ export function Sidebar() {
       <Link
         to={item.href}
         className={cn(
-          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
           isSubItem && 'ml-6',
           isActive
             ? 'bg-primary text-primary-foreground'
@@ -285,7 +285,7 @@ export function Sidebar() {
             <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
               <CollapsibleTrigger className="w-full">
                 <div className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer',
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer',
                   isProjectsActive
                     ? 'text-primary'
                     : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
@@ -338,7 +338,7 @@ export function Sidebar() {
               ) : (
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger className="w-full">
-                    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 cursor-pointer">
+                    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600 transition-all duration-200 cursor-pointer">
                       <Shield className="h-5 w-5 shrink-0" />
                       <span className="flex-1 text-left">Administração</span>
                       <ChevronDown className={cn(
@@ -368,7 +368,7 @@ export function Sidebar() {
                     <Link
                       to="/profile"
                       className={cn(
-                        'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                        'flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200',
                         location.pathname === '/profile'
                           ? 'bg-primary text-primary-foreground'
                           : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
@@ -390,7 +390,7 @@ export function Sidebar() {
                   <Link
                     to="/notifications"
                       className={cn(
-                        'relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                        'relative flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200',
                         location.pathname === '/notifications'
                           ? 'bg-primary text-primary-foreground'
                           : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
@@ -427,7 +427,7 @@ export function Sidebar() {
               <Link
                 to="/profile"
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors flex-1 min-w-0',
+                  'flex items-center gap-3 rounded-lg px-2 py-1.5 transition-all duration-200 flex-1 min-w-0',
                   location.pathname === '/profile'
                     ? 'bg-primary/10'
                     : 'hover:bg-blue-500/10'
@@ -448,7 +448,7 @@ export function Sidebar() {
                     <Link
                       to="/notifications"
                       className={cn(
-                        'relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+                        'relative flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200',
                         location.pathname === '/notifications'
                           ? 'bg-primary text-primary-foreground'
                           : 'text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'
