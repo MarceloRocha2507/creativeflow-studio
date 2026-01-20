@@ -2,7 +2,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { HoursChart } from '@/components/dashboard/HoursChart';
-import { 
+import { PendingReleasesCard } from '@/components/dashboard/PendingReleasesCard';
+import {
   FolderKanban, 
   Clock, 
   DollarSign, 
@@ -99,9 +100,10 @@ export default function Dashboard() {
         </div>
 
         {/* Charts Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-3">
           <RevenueChart />
           <HoursChart />
+          <PendingReleasesCard />
         </div>
 
         {/* Content Grid */}
