@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Play, Pause, Plus, Clock, Trash2, Calendar } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInMinutes, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -355,8 +356,22 @@ export default function TimeTracking() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-xl glass glass-border p-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-12" />
+                      </div>
+                      <Skeleton className="mt-1 h-4 w-48" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-8 w-8 rounded" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : entries.filter(e => !e.is_running).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet, AlertCircle, CheckCircle, Percent } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format, startOfMonth, endOfMonth, differenceInDays, isAfter, parseISO } from 'date-fns';
@@ -322,8 +323,19 @@ export default function Finances() {
           </div>
           <div className="p-4">
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-5 w-5 rounded" />
+                      <div>
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="mt-1 h-4 w-24" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                ))}
               </div>
             ) : payments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">

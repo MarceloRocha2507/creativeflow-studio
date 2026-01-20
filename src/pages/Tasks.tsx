@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, CheckSquare, Calendar, MoreVertical, Pencil, Trash2, Circle, CheckCircle2, Clock } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -280,8 +281,22 @@ export default function Tasks() {
 
         {/* Tasks List */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <Card key={i} className="glass-card glass-border">
+                <CardContent className="flex items-start gap-4 p-4">
+                  <Skeleton className="h-5 w-5 rounded-full mt-0.5" />
+                  <div className="flex-1">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="mt-1 h-4 w-32" />
+                    <div className="mt-2 flex gap-2">
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : filteredTasks.length === 0 ? (
           <Card className="glass-card border-white/10 border-dashed">

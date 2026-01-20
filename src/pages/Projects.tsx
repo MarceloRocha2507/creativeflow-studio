@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, FolderKanban, Users, Package, FileText, LayoutGrid, List, ArrowUpDown, Image, Smartphone, Film, Grid3X3, Type, Layers, Square } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { artStatusLabels as importedArtStatusLabels, artStatusColors } from '@/lib/projectStatus';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -1103,8 +1104,24 @@ export default function Projects() {
 
         {/* Projects Grid */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="glass-card glass-border">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-5 w-5 rounded" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="mt-3 h-6 w-40" />
+                  <Skeleton className="mt-2 h-4 w-28" />
+                  <div className="mt-4 flex gap-2">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="mt-4 h-2 w-full rounded-full" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : filteredProjects.length === 0 ? (
           <Card className="glass-card border-white/10 border-dashed">
