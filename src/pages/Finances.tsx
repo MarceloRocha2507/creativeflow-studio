@@ -391,7 +391,7 @@ export default function Finances() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         <div className="text-right">
                           <span className={cn(
                             "text-lg font-bold",
@@ -410,6 +410,17 @@ export default function Finances() {
                             </p>
                           )}
                         </div>
+                        {(payment.status === 'pending' || payment.status === 'partial') && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="gap-1.5 text-emerald-600 border-emerald-500/50 hover:bg-emerald-500/10 hover:border-emerald-500"
+                            onClick={() => setConfirmPayment(payment)}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Dar Baixa
+                          </Button>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -417,15 +428,6 @@ export default function Finances() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {(payment.status === 'pending' || payment.status === 'partial') && (
-                              <>
-                                <DropdownMenuItem onClick={() => setConfirmPayment(payment)}>
-                                  <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
-                                  Dar Baixa
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            )}
                             <DropdownMenuItem onClick={() => openEditDialog(payment)}>
                               <Pencil className="mr-2 h-4 w-4" />Editar
                             </DropdownMenuItem>
