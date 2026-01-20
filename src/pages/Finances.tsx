@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet, AlertCircle, CheckCircle, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, differenceInDays, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ConfirmPaymentDialog } from '@/components/finances/ConfirmPaymentDialog';
 import { getPaymentMethodLabel } from '@/components/finances/PaymentMethodSelect';
@@ -39,6 +39,7 @@ interface Payment {
   net_amount: number | null;
   confirmed_at: string | null;
   receipt_info: string | null;
+  release_date: string | null;
   projects?: { name: string } | null;
 }
 
@@ -388,6 +389,27 @@ export default function Finances() {
                             <span className="text-red-500">
                               • Taxa: {formatCurrency(payment.fee_amount)}
                             </span>
+                          )}
+                          {payment.status === 'paid' && payment.release_date && (
+                            (() => {
+                              const releaseDate = parseISO(payment.release_date);
+                              const today = new Date();
+                              const daysRemaining = differenceInDays(releaseDate, today);
+                              
+                              if (isAfter(today, releaseDate)) {
+                                return (
+                                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                                    Liberado
+                                  </Badge>
+                                );
+                              } else {
+                                return (
+                                  <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+                                    Libera em {daysRemaining} dia{daysRemaining !== 1 ? 's' : ''}
+                                  </Badge>
+                                );
+                              }
+                            })()
                           )}
                         </div>
                       </div>
