@@ -113,7 +113,7 @@ export function PendingReleasesCard() {
                           <p className="text-sm font-medium">
                             {format(releaseDate, 'dd/MM', { locale: ptBR })}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                          <p className="text-xs text-muted-foreground truncate max-w-[80px] sm:max-w-[120px]">
                             {(payment.projects as any)?.name || 'Projeto'}
                           </p>
                         </div>

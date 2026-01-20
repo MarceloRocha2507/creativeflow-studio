@@ -216,7 +216,7 @@ export function RevenueChart() {
   }
 
   return (
-    <div className="glass-card rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+    <div className="glass-card rounded-2xl p-6 min-w-0 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
