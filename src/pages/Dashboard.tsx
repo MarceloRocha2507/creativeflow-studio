@@ -16,22 +16,87 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { startOfWeek, endOfWeek, startOfMonth } from 'date-fns';
 
 export default function Dashboard() {
   const { user } = useAuth();
 
+  const { data: dashboardStats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats', user?.id],
+    queryFn: async () => {
+      const now = new Date();
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+      const monthStart = startOfMonth(now);
+
+      const [
+        projectsRes,
+        newProjectsRes,
+        timeEntriesRes,
+        paymentsRes,
+        clientsRes
+      ] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('id', { count: 'exact', head: true })
+          .neq('status', 'completed'),
+        
+        supabase
+          .from('projects')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', monthStart.toISOString()),
+        
+        supabase
+          .from('time_entries')
+          .select('duration_minutes')
+          .gte('start_time', weekStart.toISOString())
+          .lte('start_time', weekEnd.toISOString()),
+        
+        supabase
+          .from('payments')
+          .select('amount')
+          .eq('status', 'pending'),
+        
+        supabase
+          .from('clients')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active'),
+      ]);
+
+      const totalMinutes = (timeEntriesRes.data || []).reduce(
+        (acc, entry) => acc + (entry.duration_minutes || 0), 0
+      );
+      const totalHours = Math.round(totalMinutes / 60);
+
+      const pendingRevenue = (paymentsRes.data || []).reduce(
+        (acc, payment) => acc + Number(payment.amount || 0), 0
+      );
+
+      return {
+        activeProjects: projectsRes.count || 0,
+        newProjectsThisMonth: newProjectsRes.count || 0,
+        hoursThisWeek: totalHours,
+        pendingRevenue,
+        activeClients: clientsRes.count || 0,
+      };
+    },
+    enabled: !!user,
+  });
+
   const stats = [
     {
       title: 'Projetos Ativos',
-      value: '0',
+      value: isLoading ? '...' : String(dashboardStats?.activeProjects || 0),
       icon: FolderKanban,
-      change: '+0 este mês',
+      change: `+${dashboardStats?.newProjectsThisMonth || 0} este mês`,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
     },
     {
       title: 'Horas Trabalhadas',
-      value: '0h',
+      value: isLoading ? '...' : `${dashboardStats?.hoursThisWeek || 0}h`,
       icon: Clock,
       change: 'Esta semana',
       color: 'text-purple-500',
@@ -39,7 +104,11 @@ export default function Dashboard() {
     },
     {
       title: 'Faturamento',
-      value: 'R$ 0',
+      value: isLoading ? '...' : new Intl.NumberFormat('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL',
+        maximumFractionDigits: 0,
+      }).format(dashboardStats?.pendingRevenue || 0),
       icon: DollarSign,
       change: 'Previsto',
       color: 'text-emerald-500',
@@ -47,7 +116,7 @@ export default function Dashboard() {
     },
     {
       title: 'Clientes',
-      value: '0',
+      value: isLoading ? '...' : String(dashboardStats?.activeClients || 0),
       icon: Users,
       change: 'Ativos',
       color: 'text-amber-500',
