@@ -159,7 +159,7 @@ export default function Dashboard() {
                 {isLoading ? (
                   <Skeleton className="h-4 w-16" />
                 ) : (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground animate-fade-in">
                     <TrendingUp className="h-3 w-3" />
                     <span>{stat.change}</span>
                   </div>
@@ -170,7 +170,7 @@ export default function Dashboard() {
                 {isLoading ? (
                   <Skeleton className="mt-1 h-8 w-20" />
                 ) : (
-                  <p className="mt-0.5 text-2xl font-bold">{stat.value}</p>
+                  <p className="mt-0.5 text-2xl font-bold animate-fade-in">{stat.value}</p>
                 )}
               </div>
             </div>
