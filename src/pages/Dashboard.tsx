@@ -15,6 +15,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -155,14 +156,22 @@ export default function Dashboard() {
                 <div className={`rounded-lg p-2 ${stat.bgColor}`}>
                   <stat.icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <TrendingUp className="h-3 w-3" />
-                  <span>{stat.change}</span>
-                </div>
+                {isLoading ? (
+                  <Skeleton className="h-4 w-16" />
+                ) : (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <TrendingUp className="h-3 w-3" />
+                    <span>{stat.change}</span>
+                  </div>
+                )}
               </div>
               <div className="mt-3">
                 <p className="text-sm text-muted-foreground">{stat.title}</p>
-                <p className="mt-0.5 text-2xl font-bold">{stat.value}</p>
+                {isLoading ? (
+                  <Skeleton className="mt-1 h-8 w-20" />
+                ) : (
+                  <p className="mt-0.5 text-2xl font-bold">{stat.value}</p>
+                )}
               </div>
             </div>
           ))}
