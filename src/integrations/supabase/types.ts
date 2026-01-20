@@ -232,33 +232,51 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          confirmed_at: string | null
           created_at: string
+          fee_amount: number | null
+          fee_percentage: number | null
           id: string
+          net_amount: number | null
           notes: string | null
           payment_date: string | null
+          payment_method: string | null
           project_id: string
+          receipt_info: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           amount: number
+          confirmed_at?: string | null
           created_at?: string
+          fee_amount?: number | null
+          fee_percentage?: number | null
           id?: string
+          net_amount?: number | null
           notes?: string | null
           payment_date?: string | null
+          payment_method?: string | null
           project_id: string
+          receipt_info?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
+          confirmed_at?: string | null
           created_at?: string
+          fee_amount?: number | null
+          fee_percentage?: number | null
           id?: string
+          net_amount?: number | null
           notes?: string | null
           payment_date?: string | null
+          payment_method?: string | null
           project_id?: string
+          receipt_info?: string | null
           status?: string
           updated_at?: string
           user_id?: string

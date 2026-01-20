@@ -11,11 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet, AlertCircle } from 'lucide-react';
+import { Plus, DollarSign, TrendingUp, Clock, MoreVertical, Pencil, Trash2, Receipt, Wallet, AlertCircle, CheckCircle, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ConfirmPaymentDialog } from '@/components/finances/ConfirmPaymentDialog';
+import { getPaymentMethodLabel } from '@/components/finances/PaymentMethodSelect';
 
 interface Project {
   id: string;
@@ -31,6 +33,12 @@ interface Payment {
   payment_date: string | null;
   notes: string | null;
   created_at: string;
+  payment_method: string | null;
+  fee_percentage: number | null;
+  fee_amount: number | null;
+  net_amount: number | null;
+  confirmed_at: string | null;
+  receipt_info: string | null;
   projects?: { name: string } | null;
 }
 
@@ -40,6 +48,7 @@ export default function Finances() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [confirmPayment, setConfirmPayment] = useState<Payment | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -152,9 +161,12 @@ export default function Finances() {
     return date >= monthStart && date <= monthEnd;
   });
 
-  const totalReceived = payments.filter(p => p.status === 'paid').reduce((acc, p) => acc + p.amount, 0);
+  const paidPayments = payments.filter(p => p.status === 'paid');
+  const totalReceived = paidPayments.reduce((acc, p) => acc + (p.net_amount ?? p.amount), 0);
+  const totalGross = paidPayments.reduce((acc, p) => acc + p.amount, 0);
+  const totalFees = paidPayments.reduce((acc, p) => acc + (p.fee_amount || 0), 0);
   const totalPending = payments.filter(p => p.status === 'pending').reduce((acc, p) => acc + p.amount, 0);
-  const monthlyReceived = monthlyPayments.filter(p => p.status === 'paid').reduce((acc, p) => acc + p.amount, 0);
+  const monthlyReceived = monthlyPayments.filter(p => p.status === 'paid').reduce((acc, p) => acc + (p.net_amount ?? p.amount), 0);
   const totalProjectValue = projects.reduce((acc, p) => acc + (p.budget || 0), 0);
 
   const statusColors: Record<string, string> = {
@@ -237,7 +249,7 @@ export default function Finances() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center justify-between">
               <div className="rounded-lg bg-emerald-500/10 p-2">
@@ -245,8 +257,11 @@ export default function Finances() {
               </div>
             </div>
             <div className="mt-3">
-              <p className="text-sm text-muted-foreground">Total Recebido</p>
+              <p className="text-sm text-muted-foreground">Total Líquido</p>
               <p className="mt-0.5 text-2xl font-bold text-emerald-500">{formatCurrency(totalReceived)}</p>
+              {totalFees > 0 && (
+                <p className="text-xs text-muted-foreground">Bruto: {formatCurrency(totalGross)}</p>
+              )}
             </div>
           </div>
           
@@ -259,6 +274,18 @@ export default function Finances() {
             <div className="mt-3">
               <p className="text-sm text-muted-foreground">A Receber</p>
               <p className="mt-0.5 text-2xl font-bold text-amber-500">{formatCurrency(totalPending)}</p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div className="rounded-lg bg-red-500/10 p-2">
+                <Percent className="h-5 w-5 text-red-500" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <p className="text-sm text-muted-foreground">Total em Taxas</p>
+              <p className="mt-0.5 text-2xl font-bold text-red-500">{formatCurrency(totalFees)}</p>
             </div>
           </div>
           
@@ -342,25 +369,47 @@ export default function Finances() {
                           <Badge variant="outline" className={statusColors[payment.status]}>
                             {statusLabels[payment.status]}
                           </Badge>
+                          {payment.status === 'paid' && payment.payment_method && (
+                            <Badge variant="secondary" className="text-xs">
+                              {getPaymentMethodLabel(payment.payment_method)}
+                            </Badge>
+                          )}
                         </div>
-                        {payment.payment_date && (
-                          <p className={cn(
-                            "text-sm text-muted-foreground mt-0.5",
-                            payment.status === 'pending' && "pl-6"
-                          )}>
-                            {format(new Date(payment.payment_date + 'T12:00:00'), "dd 'de' MMMM", { locale: ptBR })}
-                          </p>
-                        )}
+                        <div className={cn(
+                          "flex items-center gap-2 text-sm text-muted-foreground mt-0.5 flex-wrap",
+                          payment.status === 'pending' && "pl-6"
+                        )}>
+                          {payment.payment_date && (
+                            <span>
+                              {format(new Date(payment.payment_date + 'T12:00:00'), "dd 'de' MMMM", { locale: ptBR })}
+                            </span>
+                          )}
+                          {payment.status === 'paid' && payment.fee_amount && payment.fee_amount > 0 && (
+                            <span className="text-red-500">
+                              • Taxa: {formatCurrency(payment.fee_amount)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className={cn(
-                          "text-lg font-bold",
-                          payment.status === 'paid' && "text-emerald-500",
-                          payment.status === 'pending' && "text-amber-500",
-                          payment.status === 'partial' && "text-blue-500"
-                        )}>
-                          {formatCurrency(payment.amount)}
-                        </span>
+                        <div className="text-right">
+                          <span className={cn(
+                            "text-lg font-bold",
+                            payment.status === 'paid' && "text-emerald-500",
+                            payment.status === 'pending' && "text-amber-500",
+                            payment.status === 'partial' && "text-blue-500"
+                          )}>
+                            {payment.status === 'paid' && payment.net_amount 
+                              ? formatCurrency(payment.net_amount)
+                              : formatCurrency(payment.amount)
+                            }
+                          </span>
+                          {payment.status === 'paid' && payment.net_amount && payment.net_amount !== payment.amount && (
+                            <p className="text-xs text-muted-foreground line-through">
+                              {formatCurrency(payment.amount)}
+                            </p>
+                          )}
+                        </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -368,6 +417,15 @@ export default function Finances() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            {(payment.status === 'pending' || payment.status === 'partial') && (
+                              <>
+                                <DropdownMenuItem onClick={() => setConfirmPayment(payment)}>
+                                  <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
+                                  Dar Baixa
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuItem onClick={() => openEditDialog(payment)}>
                               <Pencil className="mr-2 h-4 w-4" />Editar
                             </DropdownMenuItem>
@@ -385,6 +443,14 @@ export default function Finances() {
           </div>
         </div>
       </div>
+
+      {/* Confirm Payment Dialog */}
+      <ConfirmPaymentDialog
+        payment={confirmPayment}
+        open={!!confirmPayment}
+        onOpenChange={(open) => !open && setConfirmPayment(null)}
+        onSuccess={fetchData}
+      />
     </AppLayout>
   );
 }
