@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CreditCard, Banknote, QrCode, Receipt, Building2, Coins } from 'lucide-react';
 
-export type PaymentMethod = 'pix' | 'credit_card' | 'debit_card' | 'boleto' | 'cash' | 'transfer';
+export type PaymentMethod = 'pix' | 'credit_card' | 'debit_card' | 'boleto' | 'cash' | 'transfer' | 'mercado_pago_loan';
 
 interface PaymentMethodOption {
   value: PaymentMethod;
@@ -17,6 +17,7 @@ export const paymentMethods: PaymentMethodOption[] = [
   { value: 'boleto', label: 'Boleto Bancário', icon: <Receipt className="h-4 w-4" />, defaultFee: { type: 'fixed', value: 3.50 } },
   { value: 'cash', label: 'Dinheiro', icon: <Coins className="h-4 w-4" />, defaultFee: { type: 'percentage', value: 0 } },
   { value: 'transfer', label: 'Transferência Bancária', icon: <Building2 className="h-4 w-4" />, defaultFee: { type: 'percentage', value: 0 } },
+  { value: 'mercado_pago_loan', label: 'Empréstimo (Mercado Pago)', icon: <Banknote className="h-4 w-4" />, defaultFee: { type: 'percentage', value: 4.99 } },
 ];
 
 export const getPaymentMethodLabel = (method: string | null | undefined): string => {
