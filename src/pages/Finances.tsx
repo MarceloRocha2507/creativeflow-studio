@@ -412,13 +412,13 @@ export default function Finances() {
                         </div>
                         {(payment.status === 'pending' || payment.status === 'partial') && (
                           <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="gap-1.5 text-emerald-600 border-emerald-500/50 hover:bg-emerald-500/10 hover:border-emerald-500"
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
                             onClick={() => setConfirmPayment(payment)}
+                            title="Dar Baixa"
                           >
                             <CheckCircle className="h-4 w-4" />
-                            Dar Baixa
                           </Button>
                         )}
                         <Button 
