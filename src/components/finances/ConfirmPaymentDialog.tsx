@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PaymentMethodSelect, PaymentMethod, paymentMethods } from './PaymentMethodSelect';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, Calculator } from 'lucide-react';
+import { CheckCircle, Calculator, CalendarClock } from 'lucide-react';
 
 interface Payment {
   id: string;
@@ -35,6 +35,7 @@ export function ConfirmPaymentDialog({ payment, open, onOpenChange, onSuccess }:
   const [feeType, setFeeType] = useState<'percentage' | 'fixed'>('percentage');
   const [feeValue, setFeeValue] = useState('0');
   const [confirmedAt, setConfirmedAt] = useState('');
+  const [releaseDate, setReleaseDate] = useState('');
   const [receiptInfo, setReceiptInfo] = useState('');
 
   const amount = payment?.amount || 0;
@@ -55,6 +56,7 @@ export function ConfirmPaymentDialog({ payment, open, onOpenChange, onSuccess }:
       setFeeType('percentage');
       setFeeValue('0');
       setConfirmedAt(new Date().toISOString().split('T')[0]);
+      setReleaseDate('');
       setReceiptInfo('');
     }
   }, [open, payment]);
@@ -66,8 +68,16 @@ export function ConfirmPaymentDialog({ payment, open, onOpenChange, onSuccess }:
         setFeeType(method.defaultFee.type);
         setFeeValue(method.defaultFee.value.toString());
       }
+      // Auto-calcular data de liberação para Mercado Pago (+7 dias)
+      if (paymentMethod === 'mercado_pago_loan' && confirmedAt) {
+        const date = new Date(confirmedAt + 'T12:00:00');
+        date.setDate(date.getDate() + 7);
+        setReleaseDate(date.toISOString().split('T')[0]);
+      } else {
+        setReleaseDate('');
+      }
     }
-  }, [paymentMethod]);
+  }, [paymentMethod, confirmedAt]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -88,6 +98,7 @@ export function ConfirmPaymentDialog({ payment, open, onOpenChange, onSuccess }:
         fee_amount: feeAmount,
         net_amount: netAmount,
         confirmed_at: confirmedAt ? new Date(confirmedAt + 'T12:00:00').toISOString() : new Date().toISOString(),
+        release_date: releaseDate || null,
         receipt_info: receiptInfo || null,
         payment_date: payment.payment_date || confirmedAt || new Date().toISOString().split('T')[0],
       })
@@ -192,6 +203,24 @@ export function ConfirmPaymentDialog({ payment, open, onOpenChange, onSuccess }:
               onChange={(e) => setConfirmedAt(e.target.value)} 
             />
           </div>
+
+          {/* Data de Liberação (apenas para Mercado Pago) */}
+          {paymentMethod === 'mercado_pago_loan' && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <CalendarClock className="h-4 w-4" />
+                Data de Liberação (MP)
+              </Label>
+              <Input 
+                type="date" 
+                value={releaseDate} 
+                onChange={(e) => setReleaseDate(e.target.value)} 
+              />
+              <p className="text-xs text-muted-foreground">
+                Data prevista para o dinheiro cair na conta
+              </p>
+            </div>
+          )}
 
           {/* Comprovante */}
           <div className="space-y-2">
