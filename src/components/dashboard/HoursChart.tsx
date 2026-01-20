@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Period = 'week' | 'month' | 'quarter';
 
@@ -202,17 +203,31 @@ export function HoursChart() {
   if (loading) {
     return (
       <div className="glass-card rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: '700ms' }}>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
-            <Clock className="h-5 w-5 text-accent" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div>
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="mt-1 h-3 w-24" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-28" />
+        </div>
+        <Skeleton className="h-10 w-24 mb-4" />
+        <Skeleton className="h-[200px] w-full rounded-lg" />
+        <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
+          <div>
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="mt-1 h-6 w-12" />
           </div>
           <div>
-            <h2 className="font-semibold">Horas Trabalhadas</h2>
-            <p className="text-xs text-muted-foreground">{periodLabels[period]}</p>
+            <Skeleton className="h-3 w-14" />
+            <Skeleton className="mt-1 h-6 w-12" />
           </div>
-        </div>
-        <div className="h-[200px] flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">Carregando...</div>
+          <div>
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="mt-1 h-6 w-12" />
+          </div>
         </div>
       </div>
     );
